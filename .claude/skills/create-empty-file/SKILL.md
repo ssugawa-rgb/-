@@ -1,6 +1,6 @@
 ---
 name: create-empty-file
-description: Create an empty file (or folder) with a user-specified name, sanitizing characters that are invalid in filesystem paths (e.g. "/"), then commit and push to the designated branch. Use when the user asks to create a blank/empty file or folder by name, especially when the requested name contains a slash or other path-reserved characters.
+description: Create an empty file (or folder) with a user-specified name, sanitizing characters that are invalid in filesystem paths (e.g. "/"), optionally package it into a Zip archive, then commit and push to the designated branch. Use when the user asks to create a blank/empty file or folder by name (especially when the name contains a slash or other path-reserved characters) and/or wants the result zipped.
 ---
 
 # 空ファイル / フォルダー作成スキル (Create empty file / folder)
@@ -42,15 +42,25 @@ description: Create an empty file (or folder) with a user-specified name, saniti
    mkdir -p <sanitized-name> && touch <sanitized-name>/.gitkeep  # 空フォルダーの場合
    ```
 
-5. **コミット & プッシュ**:
+5. **Zip 化する** — 作成したファイル/フォルダーを Zip アーカイブにまとめる。
+   アーカイブ名はサニタイズ済みの名前を使う（`.zip` を付与）:
    ```bash
-   git add <path>
-   git commit -m "Add empty file <name>"
+   zip -r <sanitized-name>.zip <sanitized-name>   # ファイル・フォルダーどちらでも可
+   ```
+   - `zip` が無い環境では代替を使う: `python3 -c "import shutil; shutil.make_archive('<name>', 'zip', root_dir='.', base_dir='<name>')"`
+   - 空フォルダーを Zip に含める場合、中身が無いと `zip` が空エントリを作れないことがあるため
+     `.gitkeep` などのプレースホルダを入れておくと確実。
+   - 作成後は `unzip -l <name>.zip` で中身を検証する。
+
+6. **コミット & プッシュ**:
+   ```bash
+   git add <path> <sanitized-name>.zip
+   git commit -m "Add empty file <name> and zip archive"
    git push -u origin <designated-branch>
    ```
    ネットワークエラー時のみ、指数バックオフ（2s, 4s, 8s, 16s）で最大4回リトライする。
 
-6. **結果を報告する** — 作成したパス、選んだ名前とその理由（サニタイズした場合）、
+7. **結果を報告する** — 作成したパス、Zip アーカイブ名、選んだ名前とその理由（サニタイズした場合）、
    コミット/プッシュ先ブランチを伝える。PR は明示的に依頼された場合のみ作成する。
 
 ## 例 (Example)
@@ -61,4 +71,5 @@ description: Create an empty file (or folder) with a user-specified name, saniti
 1. リモート環境なのでリポジトリ内に作成する旨と、`/` が使えない旨を伝える。
 2. 置き換え案（`7-16` / `7_16` / `7月16日`）と、ファイル/フォルダーどちらかを確認。
 3. 選ばれた名前（例: `7_16`）で `touch 7_16`。
-4. 指定ブランチにコミットしてプッシュ。
+4. `zip -r 7_16.zip 7_16` で Zip 化し、`unzip -l 7_16.zip` で検証。
+5. 指定ブランチにコミットしてプッシュ。

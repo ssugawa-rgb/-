@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import csv
 import shutil
-import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -84,16 +83,50 @@ def _write_excel(workbook_path: str, rows: list, settings: dict) -> str:
         return f"入力シート {start}行目から {n}件を追記 → {saved}"
 
 
+def _clean_path(raw: str) -> str:
+    """ドラッグ&ドロップや貼り付けのパスから余分な引用符・空白を除去。"""
+    return raw.strip().strip('"').strip("'").strip()
+
+
+def _save_workbook_path(path: str) -> None:
+    """settings.yaml の workbook_path 行だけを書き換える（コメントは保持）。"""
+    lines = Path(SETTINGS).read_text(encoding="utf-8").splitlines()
+    safe = path.replace("\\", "\\\\").replace('"', '\\"')
+    out = []
+    for ln in lines:
+        if ln.lstrip().startswith("workbook_path:"):
+            indent = ln[: len(ln) - len(ln.lstrip())]
+            out.append(f'{indent}workbook_path: "{safe}"')
+        else:
+            out.append(ln)
+    Path(SETTINGS).write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def _ask_workbook_path() -> str:
+    """集計Excelの場所をドラッグ&ドロップで受け取り、保存して返す。"""
+    print("=" * 70)
+    print("  【初回設定】自動入力する集計Excelファイルを教えてください。")
+    print("=" * 70)
+    print("  集計Excelのファイルを、この黒い画面の中へ")
+    print("  ドラッグ＆ドロップして、Enterキーを押してください。")
+    print("  （ファイルのフルパスを貼り付けてEnterでもOK）")
+    while True:
+        raw = input("\n  ここにドロップ → ")
+        path = _clean_path(raw)
+        if path and Path(path).exists() and path.lower().endswith((".xlsx", ".xlsm")):
+            _save_workbook_path(path)
+            print(f"\n  ✓ 設定しました: {path}")
+            print("  （次回からはこの画面は出ません）")
+            return path
+        print("  ⚠ Excelファイルが見つかりません。もう一度お試しください。")
+
+
 def main() -> None:
     settings = excel_writer.load_settings(SETTINGS)
     workbook_path = settings.get("workbook_path", "").strip()
 
     if not workbook_path or not Path(workbook_path).exists():
-        print("【設定エラー】config/settings.yaml の workbook_path に、")
-        print("             集計Excelのフルパスを設定してください。")
-        print(f"  現在の設定: {workbook_path!r}")
-        input("\nEnterキーで終了します...")
-        sys.exit(1)
+        workbook_path = _ask_workbook_path()
 
     watch_dir = BASE / settings.get("watch_dir", "PDF投入")
     processed_dir = BASE / settings.get("processed_dir", "処理済み")

@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+# 実データは追跡しない（PDF・Excel は個人情報を含むため）
+input_pdfs/*.pdf
+input_pdfs/*.PDF
+output/*.xlsx
+samples/*.xlsx
+samples/*.pdf
+!**/.gitkeep

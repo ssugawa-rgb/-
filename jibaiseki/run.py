@@ -1,81 +1,130 @@
 #!/usr/bin/env python3
 """自賠責集計 自動入力システム — コマンドライン入口。
 
-使い方の例:
+■ 基本の使い方
+  1) まず抽出結果を確認（Excel には書き込まない）
+       python run.py --excel 集計.xlsx --preview
+  2) 問題なければ Excel に自動入力（元ファイルは変更せず output/ に保存）
+       python run.py --excel 集計.xlsx
 
-  # 1) まず中身を確認（Excel には書き込まない・抽出結果を画面表示）
-  python run.py --preview
-
-  # 2) 問題なければ Excel に追記
-  python run.py --excel 集計.xlsx
-
-  # 3) 元 Excel を上書きせず、別名で出力
-  python run.py --excel 集計.xlsx --output 集計_更新後.xlsx
+■ PDF の列位置を調べたいとき（新しい会社の様式を追加する時など）
+       python run.py --inspect あるPDF.pdf
 """
 from __future__ import annotations
 
 import argparse
-import json
+from datetime import datetime
 from pathlib import Path
 
-from core import pipeline
+from core import builder, excel_writer, master, pdf_parser
 
 BASE = Path(__file__).parent
 DEFAULT_PDF_DIR = BASE / "input_pdfs"
 DEFAULT_COMPANIES = BASE / "config" / "companies.yaml"
-DEFAULT_COLUMNS = BASE / "config" / "columns.yaml"
+DEFAULT_SETTINGS = BASE / "config" / "settings.yaml"
 DEFAULT_OUTPUT_DIR = BASE / "output"
 
-# 画面表示しない内部項目
-_INTERNAL = {"_source", "_warning"}
+
+def _gather_pdfs(pdf_dir: Path) -> list[Path]:
+    files = sorted(pdf_dir.glob("*.pdf")) + sorted(pdf_dir.glob("*.PDF"))
+    return files
 
 
-def _print_preview(records: list[dict]) -> None:
-    if not records:
-        print("PDF が見つかりませんでした。input_pdfs フォルダに PDF を入れてください。")
-        return
-    for rec in records:
-        print("=" * 60)
-        print(f"■ ファイル: {rec.get('_source', '?')}")
-        if rec.get("_warning"):
-            print(f"  ⚠ {rec['_warning']}")
-        for k, v in rec.items():
-            if k in _INTERNAL:
-                continue
-            mark = "" if v else "  ← 未取得(要ルール調整)"
-            print(f"    {k:12s}: {v}{mark}")
-    print("=" * 60)
-    print(f"合計 {len(records)} 件")
+def _inspect(pdf_path: str) -> None:
+    """PDF の単語を y 行ごとに並べ、x 座標付きで表示（列位置調査用）。"""
+    import pdfplumber
+    from collections import defaultdict
+    with pdfplumber.open(pdf_path) as pdf:
+        for pi, page in enumerate(pdf.pages, 1):
+            print(f"\n===== ページ {pi} =====")
+            rows = defaultdict(list)
+            for w in page.extract_words():
+                rows[round(w["top"])].append((round(w["x0"]), w["text"]))
+            for y in sorted(rows):
+                line = " | ".join(f"x{ x}:{t}" for x, t in sorted(rows[y]))
+                print(f"y{y:>4}  {line}")
+
+
+def _process_all(pdf_dir: Path, companies_path: Path, workbook: str):
+    companies = pdf_parser.load_companies(companies_path)
+    settings = excel_writer.load_settings(DEFAULT_SETTINGS)
+    base_master = master.load_base_master(workbook, settings)
+
+    all_rows = []
+    reports = []
+    for pdf_path in _gather_pdfs(pdf_dir):
+        text = pdf_parser.read_text(pdf_path)
+        key, conf = pdf_parser.detect_company(text, companies)
+        if not conf:
+            reports.append((pdf_path.name, None, 0, "会社を判定できませんでした（companies.yaml に様式を追加してください）"))
+            continue
+        records = pdf_parser.parse(pdf_path, conf)
+        rows = builder.build_rows(records, conf, base_master)
+        all_rows.extend(rows)
+        reports.append((pdf_path.name, key, len(rows), None))
+    return all_rows, reports, settings
+
+
+def _print_preview(rows, reports):
+    print("=" * 78)
+    for name, company, n, err in reports:
+        if err:
+            print(f"■ {name} : ⚠ {err}")
+        else:
+            print(f"■ {name} : {company} → {n} 件")
+    print("-" * 78)
+    if rows:
+        hdr = ["月", "日", "拠点コード", "事業部", "拠点", "保険会社", "保険料", "手数料", "正味保険料"]
+        print("  " + "".join(f"{h:<8}" for h in hdr))
+        for row in rows:
+            print("  " + "".join(f"{str(row.get(h,'')):<8}" for h in hdr))
+    print("-" * 78)
+    total = sum(r["保険料"] for r in rows)
+    print(f"合計 {len(rows)} 件 / 保険料合計 {total:,} 円 / 正味 {sum(r['正味保険料'] for r in rows):,} 円")
+    print("=" * 78)
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description="自賠責 PDF → Excel 自動入力")
-    p.add_argument("--pdf-dir", default=str(DEFAULT_PDF_DIR), help="PDF を入れたフォルダ")
-    p.add_argument("--excel", help="追記先の集計 Excel ファイル")
-    p.add_argument("--output", help="保存先（省略時は --excel を上書き）")
+    p.add_argument("--excel", help="集計 Excel ファイル（書き込み先）")
+    p.add_argument("--pdf-dir", default=str(DEFAULT_PDF_DIR), help="PDF フォルダ")
     p.add_argument("--companies", default=str(DEFAULT_COMPANIES))
-    p.add_argument("--columns", default=str(DEFAULT_COLUMNS))
+    p.add_argument("--output", help="保存先。省略時は output/ に日時付きで保存")
     p.add_argument("--preview", action="store_true", help="Excel に書かず抽出結果だけ表示")
-    p.add_argument("--json", action="store_true", help="抽出結果を JSON で出力")
+    p.add_argument("--inspect", metavar="PDF", help="PDF の列位置を調査して表示")
     args = p.parse_args()
 
-    records = pipeline.collect_records(args.pdf_dir, args.companies)
-
-    if args.json:
-        clean = [{k: v for k, v in r.items() if k != "_warning"} for r in records]
-        print(json.dumps(clean, ensure_ascii=False, indent=2))
+    if args.inspect:
+        _inspect(args.inspect)
         return
 
-    if args.preview or not args.excel:
-        _print_preview(records)
-        if not args.excel and not args.preview:
-            print("\n※ Excel に書き込むには --excel <ファイル> を指定してください。")
+    if not args.excel:
+        p.error("--excel <集計Excel> を指定してください")
+
+    rows, reports, settings = _process_all(Path(args.pdf_dir), Path(args.companies), args.excel)
+
+    if not rows:
+        _print_preview(rows, reports)
+        print("\n書き込む明細がありませんでした。input_pdfs に PDF を入れてください。")
         return
 
-    from core import excel_writer
-    cfg = excel_writer.load_column_config(args.columns)
-    out = excel_writer.write_rows(args.excel, records, cfg, args.output)
-    print(f"✓ {len(records)} 件を書き込みました → {out}")
+    if args.preview:
+        _print_preview(rows, reports)
+        print("\n※ 実際に書き込むには --preview を外して実行してください。")
+        return
+
+    if args.output:
+        out_path = args.output
+    else:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        name = Path(args.excel).stem
+        out_path = DEFAULT_OUTPUT_DIR / f"{name}_更新_{stamp}.xlsx"
+
+    saved, start_row, n = excel_writer.append_rows(args.excel, rows, settings, out_path)
+    _print_preview(rows, reports)
+    print(f"\n✓ 「{settings['target_sheet']}」の {start_row} 行目から {n} 件を追記しました。")
+    print(f"  保存先: {saved}")
+    print("  ※ 元ファイルは変更していません。内容を確認してから差し替えてください。")
 
 
 if __name__ == "__main__":

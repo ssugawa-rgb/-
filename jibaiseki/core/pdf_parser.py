@@ -12,7 +12,7 @@ from typing import Any
 
 import pdfplumber
 
-# 証券(証明書)番号のパターン 例: 61LGV2895 / 61LH71337
+# 証券(証明書)番号のパターン 例: 12AB34567 / 12CD34568（2桁数字+2英字+英数5桁）
 CERT_RE = re.compile(r"^[0-9]{2}[A-Z]{2}[A-Z0-9]{5}$")
 # 入金日 例: R8.07.16 (令和8年7月16日)
 DATE_RE = re.compile(r"R(\d+)\.(\d{1,2})\.(\d{1,2})")

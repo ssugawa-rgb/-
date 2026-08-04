@@ -32,39 +32,42 @@ PDF の 1 明細 → 入力シートの 1 行 に変換して追記します。
 
 ---
 
-## 2. セットアップ（最初の一回だけ）
+## 2. 使い方【おすすめ】フォルダに入れるだけアプリ（Windows）
 
-Python 3.10 以上が必要です。
+「PDF投入」フォルダに PDF を入れるだけで、集計Excelに自動入力されます。
 
-```bash
-cd jibaiseki
-pip install -r requirements.txt
-```
+### 準備（最初の一回だけ）
+1. **Python をインストール**（未導入なら https://www.python.org/ ／「Add to PATH」にチェック）
+2. `セットアップ.bat` をダブルクリック（必要な部品を自動インストール）
+3. `config/settings.yaml` を開き、`workbook_path:` に **自分の集計Excelのフルパス** を記入
+   例：`workbook_path: "C:\\Users\\you\\Documents\\自賠責集計.xlsx"`
+
+### 毎回の作業
+1. `自賠責_自動入力.bat` をダブルクリックして起動（黒いウィンドウが出ます）
+2. `PDF投入` フォルダに PDF を入れる（各社まとめて可）
+3. 自動で解析 → 内容と合計を表示 → 集計Excelに追記 されます
+4. 終わったら PDF は `処理済み` フォルダへ自動で移動します
+5. 使い終わったらウィンドウを閉じる
+
+> - **本番Excelはそのまま更新**されます（ドロップダウン・数式・書式は保持）。
+>   Excel本体を使って書き込む方式（xlwings）のため、機能が壊れません。
+> - **書き込み前に自動バックアップ**（`バックアップ` フォルダ）を取ります。
+> - 処理の記録は `output/処理ログ.csv` に残ります。
 
 ---
 
-## 3. 使い方（毎回の作業）
+## 3. 使い方（コマンド版・確認や検証用）
 
-### ステップ1: PDF を入れる
-各社から届いた PDF を `input_pdfs/` フォルダに入れます（複数まとめて可）。
+アプリを使わず、手動で確認したいとき用です。
 
-### ステップ2: まず内容を確認（Excel には書き込まない）
 ```bash
+pip install -r requirements.txt
+
+# まず内容を確認（Excelには書き込まない）
 python run.py --excel 集計.xlsx --preview
-```
-抽出した明細と、件数・保険料合計・正味合計が表示されます。
-PDF に書かれている合計と一致するか確認できます。
 
-### ステップ3: 問題なければ自動入力
-```bash
-python run.py --excel 集計.xlsx
-```
-`output/集計_更新_日時.xlsx` に、入力シートへ追記したコピーが保存されます。
-中身を確認してから、元ファイルと差し替えてください。
-
-保存先を指定したい場合：
-```bash
-python run.py --excel 集計.xlsx --output 更新後.xlsx
+# コピーに書き出して確認（本番は変更しない）
+python run.py --excel 集計.xlsx        # output/ に日時付きで保存
 ```
 
 ---
@@ -121,18 +124,24 @@ Excel のレイアウトが変わった場合はここを調整してくださ�
 
 ```
 jibaiseki/
-├── run.py                 … 実行コマンド（入口）
+├── 自賠責_自動入力.bat     … アプリ起動（ダブルクリック）
+├── セットアップ.bat        … 初回セットアップ（ダブルクリック）
+├── watch.py               … フォルダ監視アプリ本体
+├── run.py                 … コマンド版（確認・検証用）
 ├── config/
 │   ├── companies.yaml     … 各社PDFの解析設定（★会社追加はここ）
-│   └── settings.yaml      … 書き込み先シート・列・マスタの設定
+│   └── settings.yaml      … Excelのパス・シート・列・監視フォルダの設定
 ├── core/
 │   ├── pdf_parser.py      … PDFを座標ベースで解析
 │   ├── master.py          … 入力マスタ(拠点コード表)を読込
 │   ├── builder.py         … 入力シート用の行を組み立て
-│   └── excel_writer.py    … 入力シートへ追記（コピーに保存）
-├── input_pdfs/            … ここにPDFを入れる
-├── output/               … 更新後Excelの出力先
-├── samples/              … サンプル置き場
+│   ├── pipeline.py        … 解析までの共通処理
+│   ├── excel_xlwings.py   … Excel本体で追記（無損失・Windows）
+│   └── excel_writer.py    … openpyxlで追記（コピー保存・検証用）
+├── PDF投入/               … 【アプリ】ここにPDFを入れる
+├── 処理済み/              … 【アプリ】処理後のPDF移動先
+├── バックアップ/          … 【アプリ】書込前Excelのバックアップ
+├── output/               … 出力・処理ログ
 └── tests/                … 動作テスト
 ```
 

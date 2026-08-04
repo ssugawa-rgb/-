@@ -16,18 +16,13 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-from core import builder, excel_writer, master, pdf_parser
+from core import excel_writer, pipeline
 
 BASE = Path(__file__).parent
 DEFAULT_PDF_DIR = BASE / "input_pdfs"
 DEFAULT_COMPANIES = BASE / "config" / "companies.yaml"
 DEFAULT_SETTINGS = BASE / "config" / "settings.yaml"
 DEFAULT_OUTPUT_DIR = BASE / "output"
-
-
-def _gather_pdfs(pdf_dir: Path) -> list[Path]:
-    files = sorted(pdf_dir.glob("*.pdf")) + sorted(pdf_dir.glob("*.PDF"))
-    return files
 
 
 def _inspect(pdf_path: str) -> None:
@@ -46,22 +41,8 @@ def _inspect(pdf_path: str) -> None:
 
 
 def _process_all(pdf_dir: Path, companies_path: Path, workbook: str):
-    companies = pdf_parser.load_companies(companies_path)
     settings = excel_writer.load_settings(DEFAULT_SETTINGS)
-    base_master = master.load_base_master(workbook, settings)
-
-    all_rows = []
-    reports = []
-    for pdf_path in _gather_pdfs(pdf_dir):
-        text = pdf_parser.read_text(pdf_path)
-        key, conf = pdf_parser.detect_company(text, companies)
-        if not conf:
-            reports.append((pdf_path.name, None, 0, "会社を判定できませんでした（companies.yaml に様式を追加してください）"))
-            continue
-        records = pdf_parser.parse(pdf_path, conf)
-        rows = builder.build_rows(records, conf, base_master)
-        all_rows.extend(rows)
-        reports.append((pdf_path.name, key, len(rows), None))
+    all_rows, reports = pipeline.process_dir(pdf_dir, workbook, companies_path, settings)
     return all_rows, reports, settings
 
 

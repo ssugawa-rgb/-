@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>タスク管理 TODO</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="title-row">
+        <h1>📋 タスク管理</h1>
+        <button id="themeToggle" class="icon-btn" title="テーマ切り替え" aria-label="テーマ切り替え">🌙</button>
+      </div>
+      <p class="subtitle">やるべきことを整理して、確実に片付けましょう。</p>
+    </header>
+
+    <!-- 統計 -->
+    <section class="stats" id="stats" aria-label="統計">
+      <div class="stat">
+        <span class="stat-num" id="statTotal">0</span>
+        <span class="stat-label">全体</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" id="statActive">0</span>
+        <span class="stat-label">未完了</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" id="statDone">0</span>
+        <span class="stat-label">完了</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" id="statOverdue">0</span>
+        <span class="stat-label">期限切れ</span>
+      </div>
+    </section>
+
+    <!-- 進捗バー -->
+    <div class="progress-wrap" title="完了率">
+      <div class="progress-bar" id="progressBar"></div>
+      <span class="progress-text" id="progressText">0%</span>
+    </div>
+
+    <!-- 入力フォーム -->
+    <form class="task-form" id="taskForm" autocomplete="off">
+      <div class="form-main">
+        <input
+          type="text"
+          id="taskInput"
+          placeholder="新しいタスクを入力…"
+          maxlength="200"
+          required
+        />
+        <button type="submit" class="btn-primary">追加</button>
+      </div>
+      <div class="form-options">
+        <label>
+          優先度
+          <select id="prioritySelect">
+            <option value="low">低</option>
+            <option value="medium" selected>中</option>
+            <option value="high">高</option>
+          </select>
+        </label>
+        <label>
+          カテゴリ
+          <input type="text" id="categoryInput" list="categoryList" placeholder="例: 仕事" maxlength="30" />
+          <datalist id="categoryList"></datalist>
+        </label>
+        <label>
+          期限
+          <input type="date" id="dueInput" />
+        </label>
+      </div>
+    </form>
+
+    <!-- ツールバー -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input type="search" id="searchInput" placeholder="🔍 検索…" />
+      </div>
+      <div class="filters" id="filters" role="tablist">
+        <button class="filter-btn active" data-filter="all">すべて</button>
+        <button class="filter-btn" data-filter="active">未完了</button>
+        <button class="filter-btn" data-filter="done">完了</button>
+      </div>
+      <select id="sortSelect" class="sort-select" title="並べ替え">
+        <option value="created-desc">新しい順</option>
+        <option value="created-asc">古い順</option>
+        <option value="due-asc">期限が近い順</option>
+        <option value="priority-desc">優先度が高い順</option>
+        <option value="alpha">名前順</option>
+      </select>
+    </div>
+
+    <!-- タスク一覧 -->
+    <ul class="task-list" id="taskList"></ul>
+
+    <div class="empty-state" id="emptyState" hidden>
+      <p>🎉 該当するタスクはありません。</p>
+    </div>
+
+    <!-- フッター操作 -->
+    <footer class="app-footer">
+      <span id="footerCount">0 件</span>
+      <button id="clearDoneBtn" class="btn-text">完了済みを削除</button>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

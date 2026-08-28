@@ -142,6 +142,7 @@
     <div class="me">
       <span id="meName"></span><span class="rolechip" id="meRole"></span>
       <button onclick="openKeyModal()" data-master>API設定</button>
+      <button onclick="openOtaModal()" data-master>連携設定</button>
       <button onclick="doLogout()">ログアウト</button>
     </div>
   </header>
@@ -378,6 +379,21 @@
           <label class="fld">備考</label><textarea data-f="報告_備考" style="min-height:50px"></textarea>
         </div></details></div>
 
+        <!-- 反映（OTA連携） -->
+        <div class="sec" id="reflectSection"><details><summary><span class="n">連</span> OTA連携：各サイトへ反映（自動投稿）</summary><div class="body">
+          <div class="note warn" style="margin-top:0">
+            現在は<b>シミュレーションモード</b>です。各OTAへ送信する反映データ(ペイロード)を生成し、送信結果をログに記録します。
+            実際のパートナーAPI／サイトコントローラーのキーを「連携設定」に登録すると本番送信に切り替わる設計です。
+          </div>
+          <div class="btn-row" style="margin-top:12px">
+            <button class="btn accent" id="btnReflect" onclick="reflectAll()" data-can="op">🔌 対象OTAへ反映する</button>
+            <button class="btn ghost sm" onclick="previewPayload()" data-can="op">🔍 送信内容プレビュー</button>
+            <span id="reflectSt" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+          <div id="reflectLog" style="margin-top:12px"></div>
+          <div id="payloadPreview" class="hidden" style="margin-top:12px"></div>
+        </div></details></div>
+
         <!-- 操作 -->
         <div class="panel no-print" style="position:sticky;bottom:0;margin:0;box-shadow:0 -4px 16px rgba(20,30,60,.08)">
           <div class="btn-row">
@@ -437,6 +453,15 @@
   <div class="btn-row" style="margin-top:16px"><button class="btn ghost" onclick="closeKeyModal()">閉じる</button><div class="spacer"></div><button class="btn primary" onclick="saveKey()">保存</button></div>
 </div></div>
 
+<!-- OTA連携設定モーダル -->
+<div class="modal-bg hidden" id="otaModal"><div class="modal">
+  <h3>OTA連携設定（マスター専用）</h3>
+  <p>各OTA／サイトコントローラーの接続情報を登録します。1つでも「本番キー」を入れると、そのOTAは反映時に実APIを呼ぶ設計です（未入力＝シミュレーション）。キーはこのブラウザ内のみに保存されます。</p>
+  <div class="note warn" style="margin-top:0">⚠️ 楽天トラベル・じゃらん等のAPIは、契約済み施設／代理店のみに提供されます。正規のアカウント・API利用申請はご本人（または委任先）で行ってください。第三者による無断のアカウント作成・登録は各社規約に反するため代行できません。</div>
+  <div id="otaCfgFields" style="margin-top:12px"></div>
+  <div class="btn-row" style="margin-top:16px"><button class="btn ghost" onclick="closeOtaModal()">閉じる</button><div class="spacer"></div><button class="btn primary" onclick="saveOtaCfg()">保存</button></div>
+</div></div>
+
 <!-- ユーザー追加/編集モーダル -->
 <div class="modal-bg hidden" id="userModal"><div class="modal">
   <h3 id="userModalTitle">ユーザー追加</h3>
@@ -460,7 +485,7 @@
 /* =========================================================================
    ストレージ & セキュリティ（デモ用フロントエンド認証）
    ========================================================================= */
-const LS = { users:"ota_users", key:"ota_apikey", model:"ota_model", data:"ota_records", seq:"ota_seq" };
+const LS = { users:"ota_users", key:"ota_apikey", model:"ota_model", data:"ota_records", seq:"ota_seq", ota:"ota_connect" };
 const SS = { session:"ota_session" };
 const MASTER_EMAIL = "s.sugawa@classix.life"; // 初期マスター
 const ROLE_LABEL = { master:"マスター", sales:"営業", operator:"運用", viewer:"閲覧" };
@@ -618,6 +643,8 @@ function openEditor(isNew){
   document.getElementById("statusSel").value = RECORD.status;
   document.getElementById("memoText").value = RECORD.memo||"";
   document.getElementById("docArea").classList.add("hidden");
+  document.getElementById("payloadPreview").classList.add("hidden");
+  renderReflectLog();
   // 運用エリアの編集可否
   const opEditable = can("op");
   document.querySelectorAll('#opSection input, #opSection textarea').forEach(el=>el.disabled = !opEditable);
@@ -776,6 +803,169 @@ async function aiGenerateDoc(){
 }
 function copyDoc(){ navigator.clipboard.writeText(document.getElementById("docOut").textContent).then(()=>toast("コピーしました")); }
 function downloadDoc(){ downloadBlob(new Blob([document.getElementById("docOut").textContent],{type:"text/plain;charset=utf-8"}), "指示書清書_"+RECORD.id+".txt"); }
+
+/* =========================================================================
+   OTA連携（アダプター）
+   --- 各OTAの接続仕様は「コネクタ」として差し替え可能に設計。
+   --- 本番キー未登録のOTAはシミュレーション（送信内容の生成＋結果ログ）。
+   --- 実運用時は sendReal() を各社のパートナーAPI/サイトコントローラーに実装。
+   ========================================================================= */
+const OTA_DEFS = [
+  { key:"rakuten",  label:"楽天トラベル",  fields:["エンドポイントURL","施設ID","APIキー/トークン"] },
+  { key:"jalan",    label:"じゃらん",      fields:["エンドポイントURL","施設ID","APIキー/トークン"] },
+  { key:"booking",  label:"Booking.com",   fields:["エンドポイントURL","ホテルID","APIキー/トークン"] },
+  { key:"expedia",  label:"Expedia",       fields:["エンドポイントURL","プロパティID","APIキー/トークン"] },
+  { key:"agoda",    label:"Agoda",         fields:["エンドポイントURL","プロパティID","APIキー/トークン"] },
+  { key:"sitecontroller", label:"サイトコントローラー(一括連携)", fields:["エンドポイントURL","アカウントID","APIキー/トークン"] },
+];
+// 指示書の「対象OTA」表示名 → コネクタkey
+const OTA_NAME2KEY = { "楽天トラベル":"rakuten","じゃらん":"jalan","Booking.com":"booking","Expedia":"expedia","Agoda":"agoda" };
+
+function loadOtaCfg(){ return readJSON(LS.ota, {}); }
+function saveOtaCfgObj(o){ writeJSON(LS.ota, o); }
+
+/* 指示書フィールドから、OTAに送る正規化ペイロードを構築 */
+function buildPayload(f, otaLabel){
+  const p = { ota:otaLabel, 施設名:f["施設名"]||"", 指示ID:RECORD.id, 生成日時:new Date().toISOString(), 変更:[] };
+  // 料金
+  if (f["料金_変更後"]){
+    p.変更.push({ 種別:"料金変更", 対象プラン:f["料金_対象プラン"]||"", 対象客室:f["料金_対象客室"]||"",
+      現在料金:f["料金_現在"]||"", 変更後料金:f["料金_変更後"]||"",
+      期間:{開始:f["料金_期間開始"]||"",終了:f["料金_期間終了"]||""}, 曜日:f["料金_曜日"]||[] });
+  }
+  // 販売期間
+  if (f["販売_変更開始"]||f["販売_変更終了"]){
+    p.変更.push({ 種別:"販売期間変更", 対象プラン:f["販売_対象プラン"]||"",
+      変更後販売期間:{開始:f["販売_変更開始"]||"",終了:f["販売_変更終了"]||""} });
+  }
+  // キャンペーン
+  if (f["CP_名称"]||f["CP_変更後"]){
+    p.変更.push({ 種別:"キャンペーン変更", 名称:f["CP_名称"]||"", 割引:f["CP_割引"]||"",
+      実施期間:{開始:f["CP_実施開始"]||"",終了:f["CP_実施終了"]||""}, 変更後:f["CP_変更後"]||"" });
+  }
+  // 在庫
+  if (f["在庫_変更後"]){
+    p.変更.push({ 種別:"在庫変更", 対象:f["在庫_期間"]||"", 客室:f["在庫_客室"]||"",
+      現在:f["在庫_現在"]||"", 変更後:f["在庫_変更後"]||"" });
+  }
+  // プラン掲載
+  if ((f["掲載_対応"]||[]).length){
+    p.変更.push({ 種別:"掲載ステータス", 対象プラン:f["掲載_対象プラン"]||"", 対応:f["掲載_対応"]||[], 変更日:f["掲載_変更日"]||"" });
+  }
+  // OTA個別指示
+  const perKey = { "楽天トラベル":"個別_楽天_内容","じゃらん":"個別_じゃらん_内容","Booking.com":"個別_Booking_内容","Expedia":"個別_Expedia_内容","Agoda":"個別_Agoda_内容" }[otaLabel];
+  if (perKey && f[perKey]) p.変更.push({ 種別:"個別指示", 内容:f[perKey] });
+  // 変更禁止
+  p.変更禁止項目 = f["禁止"]||[];
+  return p;
+}
+
+/* 反映実行 */
+async function reflectAll(){
+  if (!can("op")){ toast("反映権限がありません"); return; }
+  const f = collectForm();
+  const otas = f["対象OTA"]||[];
+  if (!otas.length){ toast("対象OTAが選択されていません"); return; }
+  const btn=document.getElementById("btnReflect"), st=document.getElementById("reflectSt");
+  btn.disabled=true; st.innerHTML=`<span class="spinner d"></span> 反映中...`;
+  const cfg = loadOtaCfg();
+  RECORD.pushLog = RECORD.pushLog || [];
+  for (const label of otas){
+    const key = OTA_NAME2KEY[label];
+    const payload = buildPayload(f, label);
+    const conf = key ? cfg[key] : null;
+    const hasKey = conf && conf["APIキー/トークン"];
+    let entry;
+    try {
+      if (hasKey){
+        // 本番接続ポイント（実装差し替え箇所）
+        const r = await sendReal(key, conf, payload);
+        entry = { ota:label, at:new Date().toISOString(), status:"success", mode:"live", message:r.message, payload };
+      } else {
+        const r = await sendSimulated(label, payload);
+        entry = { ota:label, at:new Date().toISOString(), status:r.status, mode:"sim", message:r.message, payload };
+      }
+    } catch(e){
+      entry = { ota:label, at:new Date().toISOString(), status:"error", mode:hasKey?"live":"sim", message:e.message, payload };
+    }
+    RECORD.pushLog.push(entry);
+  }
+  // 全成功なら状態を「完了」候補に
+  saveInstruction();
+  renderReflectLog();
+  btn.disabled=false; st.textContent="反映処理が完了しました";
+  toast("反映処理を実行しました（ログ参照）");
+}
+
+/* シミュレーション送信：入力の妥当性チェックだけ行い、成功/警告を返す */
+function sendSimulated(label, payload){
+  return new Promise(res=>{
+    setTimeout(()=>{
+      if (!payload.変更.length) res({ status:"warn", message:"送信対象の変更内容がありません（この指示書には"+label+"向けの変更がない可能性）。" });
+      else res({ status:"success", message:"シミュレーション送信OK：変更"+payload.変更.length+"件を"+label+"へ反映（実キー未登録のため未送信）。" });
+    }, 350);
+  });
+}
+
+/* 本番送信スタブ：実際のパートナーAPI/サイトコントローラーをここに実装 */
+async function sendReal(key, conf, payload){
+  // 例）const res = await fetch(conf["エンドポイントURL"], { method:"POST",
+  //        headers:{ "Authorization":"Bearer "+conf["APIキー/トークン"], "content-type":"application/json" },
+  //        body: JSON.stringify(mapToVendorSchema(key, conf, payload)) });
+  //     各社のスキーマ・認証方式に合わせて実装が必要。
+  throw new Error("本番コネクタ未実装（"+key+"）。API仕様が確定したら sendReal() に実装します。");
+}
+
+function previewPayload(){
+  const f = collectForm();
+  const otas = f["対象OTA"]||[];
+  const box = document.getElementById("payloadPreview");
+  if (!otas.length){ toast("対象OTAが未選択です"); return; }
+  box.classList.toggle("hidden");
+  if (box.classList.contains("hidden")) return;
+  box.innerHTML = otas.map(l=>`<div style="margin-bottom:8px">
+    <div style="font-weight:700;font-size:12px;margin-bottom:4px">${escapeHtml(l)} への送信データ</div>
+    <pre class="doc" style="font-size:11px;max-height:220px;overflow:auto">${escapeHtml(JSON.stringify(buildPayload(f,l),null,2))}</pre></div>`).join("");
+}
+
+function renderReflectLog(){
+  const box=document.getElementById("reflectLog");
+  const logs=(RECORD&&RECORD.pushLog)||[];
+  if (!logs.length){ box.innerHTML=""; return; }
+  const cls={success:"st-done",warn:"st-working",error:"st-draft"};
+  const jp={success:"成功",warn:"警告",error:"失敗"};
+  box.innerHTML = `<div style="font-weight:700;font-size:12px;margin-bottom:6px">反映ログ</div>`+
+    logs.slice().reverse().map(l=>`<div class="btn-row" style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--line)">
+      <span class="status ${cls[l.status]||'st-draft'}">${jp[l.status]||l.status}</span>
+      <b>${escapeHtml(l.ota)}</b>
+      <span style="color:var(--muted)">${l.mode==='live'?'本番':'シミュ'}</span>
+      <span style="flex:1">${escapeHtml(l.message)}</span>
+      <span style="color:var(--muted)">${(l.at||'').slice(0,16).replace('T',' ')}</span>
+    </div>`).join("");
+}
+
+/* 連携設定モーダル */
+function openOtaModal(){
+  const cfg=loadOtaCfg();
+  document.getElementById("otaCfgFields").innerHTML = OTA_DEFS.map(d=>{
+    const c=cfg[d.key]||{};
+    const live = c["APIキー/トークン"] ? '<span class="status st-done" style="margin-left:6px">本番キー登録済</span>' : '<span class="status st-draft" style="margin-left:6px">シミュ</span>';
+    return `<details class="sec"><summary><span class="n">${d.label[0]}</span>${d.label}${live}</summary><div class="body">
+      ${d.fields.map(fn=>`<label class="fld">${fn}</label><input type="${fn.includes('キー')||fn.includes('トークン')?'password':'text'}" data-ota="${d.key}" data-otaf="${fn}" value="${escapeHtml(c[fn]||'')}">`).join("")}
+    </div></details>`;
+  }).join("");
+  document.getElementById("otaModal").classList.remove("hidden");
+}
+function closeOtaModal(){ document.getElementById("otaModal").classList.add("hidden"); }
+function saveOtaCfg(){
+  const cfg={};
+  document.querySelectorAll('#otaCfgFields [data-ota]').forEach(el=>{
+    const k=el.dataset.ota, fn=el.dataset.otaf;
+    if(!cfg[k]) cfg[k]={};
+    cfg[k][fn]=el.value.trim();
+  });
+  saveOtaCfgObj(cfg); closeOtaModal(); toast("連携設定を保存しました");
+}
 
 /* =========================================================================
    ユーザー管理（マスター）

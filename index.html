@@ -3,690 +3,861 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ホテル掲載変更 申請書システム</title>
-<!-- Excel/CSV パース用ライブラリ (SheetJS) -->
+<title>OTA掲載変更 指示書システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  :root {
-    --bg: #f4f6fb;
-    --panel: #ffffff;
-    --ink: #1a2233;
-    --muted: #6b7488;
-    --line: #e2e6ef;
-    --brand: #2f56d9;
-    --brand-ink: #1c3aa8;
-    --accent: #12a594;
-    --warn: #d97706;
-    --danger: #dc2626;
-    --shadow: 0 1px 3px rgba(20,30,60,.08), 0 8px 24px rgba(20,30,60,.06);
-    --radius: 12px;
+  :root{
+    --bg:#eef1f7; --panel:#fff; --ink:#182031; --muted:#6b7488; --line:#e2e6ef;
+    --brand:#2f56d9; --brand-ink:#1c3aa8; --accent:#0f9d8f; --warn:#d97706; --danger:#dc2626;
+    --shadow:0 1px 3px rgba(20,30,60,.08),0 10px 28px rgba(20,30,60,.07); --radius:12px;
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    line-height: 1.6;
-    font-size: 14px;
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;font-size:14px}
+  a{color:var(--brand)}
+  .hidden{display:none !important}
+
+  /* ---------- ログイン ---------- */
+  #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2f56d9,#16225c);padding:20px}
+  .login-card{background:#fff;border-radius:16px;box-shadow:var(--shadow);width:min(400px,94vw);padding:34px 30px}
+  .login-card h1{font-size:19px;margin:0 0 2px}
+  .login-card .sub{color:var(--muted);font-size:12px;margin-bottom:22px}
+  .login-card .brandmark{width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,#2f56d9,#1c3aa8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;margin-bottom:14px}
+  .err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:8px;padding:8px 11px;font-size:12px;margin-top:10px}
+
+  /* ---------- 共通 ---------- */
+  input[type=text],input[type=password],input[type=date],input[type=number],input[type=time],textarea,select{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fbfcfe;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--brand);background:#fff}
+  textarea{resize:vertical;min-height:80px}
+  label.fld{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 4px}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;border:1px solid transparent;font:inherit;font-weight:600;cursor:pointer;transition:.15s}
+  .btn.primary{background:var(--brand);color:#fff}.btn.primary:hover{background:var(--brand-ink)}
+  .btn.accent{background:var(--accent);color:#fff}.btn.accent:hover{filter:brightness(.94)}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}.btn.ghost:hover{border-color:#c3ccdf}
+  .btn.danger{background:#fff;border-color:#fecaca;color:var(--danger)}.btn.danger:hover{background:#fef2f2}
+  .btn.sm{padding:5px 11px;font-size:12px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .spacer{flex:1}
+
+  /* ---------- レイアウト ---------- */
+  header.top{background:linear-gradient(135deg,#2f56d9,#1c3aa8);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);position:sticky;top:0;z-index:30}
+  header.top .logo{font-weight:800;font-size:15px;display:flex;align-items:center;gap:9px}
+  header.top .logo .mk{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center}
+  header.top nav{display:flex;gap:4px;margin-left:10px}
+  header.top nav button{background:transparent;border:none;color:rgba(255,255,255,.85);padding:7px 13px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600;font-size:13px}
+  header.top nav button:hover{background:rgba(255,255,255,.12);color:#fff}
+  header.top nav button.on{background:rgba(255,255,255,.2);color:#fff}
+  header.top .me{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px}
+  .rolechip{background:rgba(255,255,255,.18);padding:3px 9px;border-radius:20px;font-weight:700;font-size:11px}
+  header.top .me button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 11px;border-radius:7px;cursor:pointer;font-size:12px}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 16px 90px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+  .panel h2{margin:0 0 3px;font-size:16px}
+  .panel .lead{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:680px){.row2,.row3{grid-template-columns:1fr}}
+
+  .sec{border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden}
+  .sec>summary{cursor:pointer;padding:12px 16px;background:#f5f7fc;font-weight:700;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px}
+  .sec>summary::-webkit-details-marker{display:none}
+  .sec>summary .n{width:22px;height:22px;border-radius:6px;background:var(--brand);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+  .sec .body{padding:16px}
+  .checks{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:4px}
+  .checks label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer}
+  .checks input{width:auto}
+
+  table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+  table.tbl th,table.tbl td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:middle}
+  table.tbl th{background:#f1f4fb;font-size:12px;color:var(--muted)}
+  table.tbl td input,table.tbl td textarea{border:none;background:transparent;padding:4px}
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+  .card:hover{border-color:#c3ccdf;transform:translateY(-1px)}
+  .card h3{margin:0 0 4px;font-size:15px}
+  .card .meta{font-size:12px;color:var(--muted)}
+  .status{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+  .st-draft{background:#f1f5f9;color:#475569}
+  .st-submitted{background:#dbeafe;color:#1d4ed8}
+  .st-working{background:#fef3c7;color:#b45309}
+  .st-done{background:#dcfce7;color:#15803d}
+  .pri-高{color:var(--danger);font-weight:700}.pri-中{color:var(--warn);font-weight:700}.pri-低{color:var(--muted)}
+
+  .dropzone{border:2px dashed #c3ccdf;border-radius:10px;padding:20px;text-align:center;color:var(--muted);background:#fafbff;cursor:pointer;transition:.15s}
+  .dropzone.drag{border-color:var(--brand);background:#eef2ff;color:var(--brand-ink)}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(15,20,35,.55);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
+  .modal{background:#fff;border-radius:var(--radius);padding:24px;width:min(520px,96vw);box-shadow:var(--shadow);max-height:90vh;overflow:auto}
+  .modal h3{margin:0 0 6px}.modal p{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+  .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:middle}
+  .spinner.d{border-color:rgba(47,86,217,.3);border-top-color:var(--brand)}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:80;box-shadow:var(--shadow)}
+  .note{font-size:12px;color:var(--muted);background:#f1f4fb;border-radius:8px;padding:10px 12px;margin-top:12px}
+  .note.warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+  .doc{background:#fff;border:1px solid var(--line);border-radius:8px;padding:26px 30px;font-size:13px;white-space:pre-wrap;line-height:1.8;min-height:160px}
+  .key-dot{width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block}.key-dot.ok{background:#34d399}
+
+  @media print{
+    header.top,nav,.btn,.no-print,.dropzone{display:none !important}
+    body{background:#fff}.wrap{max-width:100%;padding:0}
+    .sec{break-inside:avoid}
   }
-  header.app {
-    background: linear-gradient(135deg, #2f56d9, #1c3aa8);
-    color: #fff;
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: var(--shadow);
-    position: sticky; top: 0; z-index: 20;
-  }
-  header.app h1 { font-size: 17px; margin: 0; font-weight: 700; letter-spacing: .02em; }
-  header.app .sub { font-size: 12px; opacity: .8; margin-top: 2px; }
-  header.app .key-status { font-size: 12px; display: flex; gap: 8px; align-items: center; }
-  .key-dot { width: 8px; height: 8px; border-radius: 50%; background: #f87171; }
-  .key-dot.ok { background: #34d399; }
-  header.app button {
-    background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.35);
-    padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;
-  }
-  header.app button:hover { background: rgba(255,255,255,.28); }
-
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 80px; }
-
-  /* ステップナビ */
-  .steps { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .step {
-    flex: 1; min-width: 160px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 12px 14px; cursor: pointer; position: relative;
-    transition: .15s; box-shadow: var(--shadow);
-  }
-  .step:hover { border-color: #c3ccdf; }
-  .step.active { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(47,86,217,.15), var(--shadow); }
-  .step.done .step-num { background: var(--accent); }
-  .step-num {
-    display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--brand);
-    color: #fff; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-right: 8px;
-  }
-  .step-title { font-weight: 700; font-size: 13px; }
-  .step-desc { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); margin-bottom: 18px; }
-  .panel h2 { margin: 0 0 4px; font-size: 16px; }
-  .panel .lead { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
-
-  label.fld { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 12px 0 4px; }
-  input[type=text], input[type=password], textarea, select {
-    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font: inherit;
-    background: #fbfcfe;
-  }
-  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--brand); background: #fff; }
-  textarea { resize: vertical; min-height: 120px; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-  .dropzone {
-    border: 2px dashed #c3ccdf; border-radius: var(--radius); padding: 32px 20px; text-align: center;
-    color: var(--muted); background: #fafbff; transition: .15s; cursor: pointer;
-  }
-  .dropzone.drag { border-color: var(--brand); background: #eef2ff; color: var(--brand-ink); }
-  .dropzone .big { font-size: 32px; margin-bottom: 6px; }
-  .dropzone strong { color: var(--ink); }
-
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 9px; border: 1px solid transparent; font: inherit; font-weight: 600; cursor: pointer; transition: .15s; }
-  .btn.primary { background: var(--brand); color: #fff; }
-  .btn.primary:hover { background: var(--brand-ink); }
-  .btn.ghost { background: #fff; border-color: var(--line); color: var(--ink); }
-  .btn.ghost:hover { border-color: #c3ccdf; }
-  .btn.accent { background: var(--accent); color: #fff; }
-  .btn.accent:hover { filter: brightness(.94); }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-  .spacer { flex: 1; }
-
-  table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
-  table.data th, table.data td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
-  table.data th { background: #f1f4fb; font-size: 12px; color: var(--muted); position: sticky; top: 56px; }
-  table.data td[contenteditable] { background: #fff; }
-  table.data td[contenteditable]:focus { outline: 2px solid var(--brand); }
-  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; max-height: 460px; overflow-y: auto; }
-  .changed { background: #fff7ed !important; }
-  .tag { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .tag.add { background: #dcfce7; color: #15803d; }
-  .tag.mod { background: #ffedd5; color: #c2410c; }
-  .tag.del { background: #fee2e2; color: #b91c1c; }
-  .tag.keep { background: #eef2ff; color: #4338ca; }
-
-  .empty { text-align: center; color: var(--muted); padding: 30px; font-size: 13px; }
-  .files { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
-  .file-chip { display: flex; align-items: center; gap: 8px; background: #f1f4fb; padding: 6px 12px; border-radius: 8px; font-size: 12px; }
-  .file-chip .x { margin-left: auto; cursor: pointer; color: var(--danger); font-weight: 700; }
-
-  .doc {
-    background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 28px 32px; font-size: 13px;
-    white-space: pre-wrap; line-height: 1.8; min-height: 200px;
-  }
-  .hidden { display: none !important; }
-
-  /* モーダル */
-  .modal-bg { position: fixed; inset: 0; background: rgba(15,20,35,.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { background: #fff; border-radius: var(--radius); padding: 24px; width: min(480px, 92vw); box-shadow: var(--shadow); }
-  .modal h3 { margin: 0 0 6px; }
-  .modal p { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
-
-  .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
-  .spinner.dark { border-color: rgba(47,86,217,.3); border-top-color: var(--brand); }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 60; box-shadow: var(--shadow); }
-  .note { font-size: 12px; color: var(--muted); background: #f1f4fb; border-radius: 8px; padding: 10px 12px; margin-top: 12px; }
-  .note b { color: var(--ink); }
-  @media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<header class="app">
-  <div>
-    <h1>ホテル掲載変更 申請書システム</h1>
-    <div class="sub">ヒアリング取込 → 変更整理 → 申請書AI生成 → 反映データ出力</div>
-  </div>
-  <div class="key-status">
-    <span class="key-dot" id="keyDot"></span>
-    <span id="keyLabel">APIキー未設定</span>
-    <button onclick="openKeyModal()">API設定</button>
-  </div>
-</header>
 
-<div class="wrap">
-  <!-- ステップナビ -->
-  <div class="steps" id="stepNav"></div>
-
-  <!-- STEP 1: 案件情報 + 取込 -->
-  <section class="panel" data-step="0">
-    <h2>1. 案件情報 & ヒアリング取込</h2>
-    <p class="lead">営業マンがホテルで収集した情報を投入します。既存の掲載データ(Excel/CSV)と、変更依頼メモを取り込んでください。</p>
-
-    <div class="row2">
-      <div>
-        <label class="fld">ホテル名 / 施設名</label>
-        <input type="text" id="hotelName" placeholder="例）〇〇温泉 △△ホテル" />
-      </div>
-      <div>
-        <label class="fld">担当営業</label>
-        <input type="text" id="salesName" placeholder="例）鈴木 太郎" />
-      </div>
-    </div>
-
-    <label class="fld">① 既存の掲載データ (Excel / CSV) — ドラッグ&ドロップ</label>
-    <div class="dropzone" id="dzData">
-      <div class="big">📄</div>
-      <div><strong>.xlsx / .xls / .csv</strong> をここにドロップ<br>またはクリックして選択</div>
-    </div>
-    <input type="file" id="fileData" class="hidden" accept=".xlsx,.xls,.csv" />
-    <div class="files" id="dataFiles"></div>
-
-    <label class="fld">② 変更依頼メモ (自由記述) — 直接入力 or テキストファイルをドロップ</label>
-    <div class="dropzone" id="dzMemo" style="padding:18px;">
-      <div>📝 <strong>.txt</strong> をドロップ、または下に直接入力</div>
-    </div>
-    <input type="file" id="fileMemo" class="hidden" accept=".txt,.md,.csv" />
-    <textarea id="memoText" placeholder="例）&#10;・素泊まりプランの料金を8,000円→9,500円に変更&#10;・チェックイン時間を15:00→14:00に前倒し&#10;・大浴場が改装中のため一時休止の旨を注記&#10;・朝食バイキングの品数が増えたのでPR文を強化したい"></textarea>
-
-    <div class="btn-row">
-      <div class="spacer"></div>
-      <button class="btn primary" onclick="goStep(1)">次へ：変更内容の整理 →</button>
-    </div>
-    <div class="note">💡 このステップは全て手入力/ドロップだけで動きます（AI不要）。取り込んだデータは次のステップで表として編集できます。</div>
-  </section>
-
-  <!-- STEP 2: 変更内容の整理 -->
-  <section class="panel hidden" data-step="1">
-    <h2>2. 変更内容の整理・データ移行</h2>
-    <p class="lead">取り込んだ掲載データと変更メモを突き合わせ、変更点を一覧化します。AIでメモから変更点を自動抽出することもできます。</p>
-
-    <div class="btn-row" style="margin-top:0;">
-      <button class="btn accent" id="btnExtract" onclick="aiExtractChanges()">✨ AIで変更点を自動抽出</button>
-      <button class="btn ghost" onclick="addChangeRow()">＋ 行を追加</button>
-      <div class="spacer"></div>
-      <span id="extractStatus" style="font-size:12px;color:var(--muted);align-self:center;"></span>
-    </div>
-
-    <div class="table-scroll" style="margin-top:14px;">
-      <table class="data" id="changeTable">
-        <thead>
-          <tr>
-            <th style="width:18%">項目</th>
-            <th style="width:28%">現在の内容</th>
-            <th style="width:28%">変更後の内容</th>
-            <th style="width:12%">区分</th>
-            <th style="width:14%">備考</th>
-          </tr>
-        </thead>
-        <tbody id="changeBody">
-          <tr><td colspan="5" class="empty">まだ変更点がありません。「AIで自動抽出」または「行を追加」してください。</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <details style="margin-top:14px;">
-      <summary style="cursor:pointer;font-size:12px;color:var(--muted);">取り込んだ元データを確認する</summary>
-      <div class="table-scroll" style="margin-top:10px;" id="rawDataView"><div class="empty">元データが取り込まれていません。</div></div>
-    </details>
-
-    <div class="btn-row">
-      <button class="btn ghost" onclick="goStep(0)">← 戻る</button>
-      <div class="spacer"></div>
-      <button class="btn primary" onclick="goStep(2)">次へ：申請書を生成 →</button>
-    </div>
-  </section>
-
-  <!-- STEP 3: 申請書生成 -->
-  <section class="panel hidden" data-step="2">
-    <h2>3. 申請書（新書）AI自動生成</h2>
-    <p class="lead">整理した変更点をもとに、サポート担当がそのまま作業できる正式な申請書をAIが作成します。</p>
-
-    <div class="btn-row" style="margin-top:0;">
-      <button class="btn accent" id="btnGenDoc" onclick="aiGenerateDoc()">✨ 申請書をAIで生成</button>
-      <button class="btn ghost" onclick="copyDoc()">📋 コピー</button>
-      <button class="btn ghost" onclick="downloadDoc()">⬇ テキスト保存</button>
-      <div class="spacer"></div>
-      <span id="docStatus" style="font-size:12px;color:var(--muted);align-self:center;"></span>
-    </div>
-
-    <div class="doc" id="docOut" contenteditable="true" style="margin-top:14px;">ここに申請書が生成されます。上の「申請書をAIで生成」を押してください。</div>
-
-    <div class="btn-row">
-      <button class="btn ghost" onclick="goStep(1)">← 戻る</button>
-      <div class="spacer"></div>
-      <button class="btn primary" onclick="goStep(3)">次へ：反映データを出力 →</button>
-    </div>
-  </section>
-
-  <!-- STEP 4: 反映データ出力 -->
-  <section class="panel hidden" data-step="3">
-    <h2>4. 変更後データの出力（サポート反映用）</h2>
-    <p class="lead">変更後の内容を反映したデータを、掲載システムに取り込める形式で書き出します。</p>
-
-    <div class="table-scroll">
-      <table class="data" id="outputTable">
-        <thead><tr><th>項目</th><th>反映後の内容</th><th>変更区分</th></tr></thead>
-        <tbody id="outputBody"><tr><td colspan="3" class="empty">変更点が未登録です。</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn ghost" onclick="goStep(2)">← 戻る</button>
-      <div class="spacer"></div>
-      <button class="btn accent" onclick="exportCSV()">⬇ CSVで出力</button>
-      <button class="btn accent" onclick="exportXLSX()">⬇ Excelで出力</button>
-    </div>
-    <div class="note">出力ファイルには「項目・反映後の内容・変更区分（追加/変更/削除/据置）」が含まれます。掲載システムの取込フォーマットに合わせて列を調整してください。</div>
-  </section>
-</div>
-
-<!-- APIキー設定モーダル -->
-<div class="modal-bg hidden" id="keyModal">
-  <div class="modal">
-    <h3>Claude API 設定</h3>
-    <p>申請書の自動生成・変更点抽出に使用します。キーはこのブラウザ内(localStorage)にのみ保存され、外部には送信されません（Anthropic APIへの直接呼び出しのみ）。</p>
-    <label class="fld">APIキー (sk-ant-...)</label>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
-    <label class="fld">モデル</label>
-    <select id="modelSelect">
-      <option value="claude-sonnet-5">claude-sonnet-5（推奨・高速）</option>
-      <option value="claude-opus-4-8">claude-opus-4-8（高精度）</option>
-      <option value="claude-haiku-4-5-20251001">claude-haiku-4-5（軽量・低コスト）</option>
-    </select>
-    <div class="btn-row">
-      <button class="btn ghost" onclick="closeKeyModal()">キャンセル</button>
-      <div class="spacer"></div>
-      <button class="btn primary" onclick="saveKey()">保存</button>
-    </div>
-    <div class="note">キーは <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic Console</a> で発行できます。</div>
+<!-- ===================== ログイン ===================== -->
+<div id="loginView">
+  <div class="login-card">
+    <div class="brandmark">OTA</div>
+    <h1>OTA掲載変更 指示書システム</h1>
+    <div class="sub">営業担当 → バックオフィス／運用担当</div>
+    <label class="fld">ユーザーID（メール）</label>
+    <input type="text" id="loginId" autocomplete="username" placeholder="you@example.com" />
+    <label class="fld">パスワード</label>
+    <input type="password" id="loginPw" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div id="loginErr" class="err hidden"></div>
+    <div style="margin-top:18px"><button class="btn primary" style="width:100%" onclick="doLogin()">ログイン</button></div>
+    <div id="firstRunNote" class="note hidden" style="margin-top:16px"></div>
+    <div class="note" style="margin-top:14px">🔒 デモ用の認証です。実運用では認証をサーバー側で行う構成を推奨します（READMEに記載）。</div>
   </div>
 </div>
+
+<!-- ===================== アプリ ===================== -->
+<div id="appView" class="hidden">
+  <header class="top">
+    <div class="logo"><span class="mk">OTA</span><span>掲載変更 指示書</span></div>
+    <nav id="nav">
+      <button data-view="list" onclick="showView('list')">📋 案件一覧</button>
+      <button data-view="edit" onclick="newInstruction()">✏️ 新規指示書</button>
+      <button data-view="users" onclick="showView('users')" data-master>👥 ユーザー管理</button>
+    </nav>
+    <div class="me">
+      <span id="meName"></span><span class="rolechip" id="meRole"></span>
+      <button onclick="openKeyModal()" data-master>API設定</button>
+      <button onclick="doLogout()">ログアウト</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- 一覧 -->
+    <div id="view-list" class="view">
+      <div class="panel">
+        <div class="btn-row">
+          <div><h2>指示書 案件一覧</h2><p class="lead" style="margin:0">ステータスで進捗を管理します。カードをクリックで開きます。</p></div>
+          <div class="spacer"></div>
+          <button class="btn primary" onclick="newInstruction()" data-can="create">＋ 新規指示書</button>
+        </div>
+      </div>
+      <div id="cardList" class="cards"></div>
+      <div id="listEmpty" class="panel" style="text-align:center;color:var(--muted)">まだ指示書がありません。「新規指示書」から作成してください。</div>
+    </div>
+
+    <!-- 編集 -->
+    <div id="view-edit" class="view hidden">
+      <div class="panel">
+        <div class="btn-row">
+          <div>
+            <h2 id="editTitle">新規 OTA掲載内容 変更指示書</h2>
+            <p class="lead" style="margin:0">全項目は任意。ヒアリングメモからAIで自動記入もできます。</p>
+          </div>
+          <div class="spacer"></div>
+          <span class="status" id="editStatus"></span>
+        </div>
+
+        <!-- AI 取込 -->
+        <div class="sec" data-can="edit">
+          <details open><summary><span class="n">AI</span> ヒアリングメモから自動記入</summary>
+          <div class="body">
+            <div class="dropzone" id="dzMemo" style="padding:14px;margin-bottom:8px">📝 ヒアリングメモ(.txt)をドロップ、または下に貼り付け</div>
+            <input type="file" id="fileMemo" class="hidden" accept=".txt,.md" />
+            <textarea id="memoText" placeholder="例）9月の金土・祝前日のツインを12,000円→14,000円へ。対象：楽天/じゃらん/Booking/Expedia/Agoda。楽天・じゃらん・Bookingで30日前予約10%OFFを9/1開始。キャンセル規定・食事・客室名・写真・説明文は変更しないこと。"></textarea>
+            <div class="btn-row" style="margin-top:10px">
+              <button class="btn accent" id="btnAiFill" onclick="aiFillForm()">✨ メモから指示書を自動作成</button>
+              <span id="aiFillSt" style="font-size:12px;color:var(--muted)"></span>
+            </div>
+          </div></details>
+        </div>
+
+        <!-- 基本情報 -->
+        <div class="sec"><details open><summary><span class="n">基</span> 基本情報</summary><div class="body">
+          <div class="row3">
+            <div><label class="fld">施設名</label><input type="text" data-f="施設名"></div>
+            <div><label class="fld">営業担当</label><input type="text" data-f="営業担当"></div>
+            <div><label class="fld">優先度</label>
+              <div class="checks">
+                <label><input type="checkbox" data-f="優先度" data-multi value="高">高</label>
+                <label><input type="checkbox" data-f="優先度" data-multi value="中">中</label>
+                <label><input type="checkbox" data-f="優先度" data-multi value="低">低</label>
+              </div></div>
+          </div>
+          <div class="row2">
+            <div><label class="fld">指示日</label><input type="date" data-f="指示日"></div>
+            <div><label class="fld">変更希望日（まで）</label><input type="date" data-f="変更希望日"></div>
+          </div>
+        </div></details></div>
+
+        <!-- 1 対象OTA -->
+        <div class="sec"><details open><summary><span class="n">1</span> 対象OTA</summary><div class="body">
+          <div class="checks" id="otaChecks">
+            <label><input type="checkbox" data-f="対象OTA" data-multi value="楽天トラベル">楽天トラベル</label>
+            <label><input type="checkbox" data-f="対象OTA" data-multi value="じゃらん">じゃらん</label>
+            <label><input type="checkbox" data-f="対象OTA" data-multi value="Booking.com">Booking.com</label>
+            <label><input type="checkbox" data-f="対象OTA" data-multi value="Expedia">Expedia</label>
+            <label><input type="checkbox" data-f="対象OTA" data-multi value="Agoda">Agoda</label>
+            <label><input type="checkbox" data-f="対象OTA" data-multi value="一休.com">一休.com</label>
+            <label><input type="checkbox" data-f="対象OTA" data-multi value="自社予約サイト">自社予約サイト</label>
+          </div>
+          <label class="fld">その他</label><input type="text" data-f="対象OTA_その他">
+        </div></details></div>
+
+        <!-- 2 掲載料金 -->
+        <div class="sec"><details><summary><span class="n">2</span> 掲載料金の変更</summary><div class="body">
+          <div class="row2">
+            <div><label class="fld">対象プラン</label><input type="text" data-f="料金_対象プラン"></div>
+            <div><label class="fld">対象客室</label><input type="text" data-f="料金_対象客室"></div>
+          </div>
+          <div class="row2">
+            <div><label class="fld">現在料金（円）</label><input type="number" data-f="料金_現在"></div>
+            <div><label class="fld">変更後料金（円）</label><input type="number" data-f="料金_変更後"></div>
+          </div>
+          <div class="row2">
+            <div><label class="fld">対象期間 開始</label><input type="date" data-f="料金_期間開始"></div>
+            <div><label class="fld">対象期間 終了</label><input type="date" data-f="料金_期間終了"></div>
+          </div>
+          <label class="fld">対象曜日</label>
+          <div class="checks">
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="月">月</label>
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="火">火</label>
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="水">水</label>
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="木">木</label>
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="金">金</label>
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="土">土</label>
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="日">日</label>
+            <label><input type="checkbox" data-f="料金_曜日" data-multi value="祝前日">祝前日</label>
+          </div>
+          <label class="fld">変更理由</label><textarea data-f="料金_理由" style="min-height:60px"></textarea>
+        </div></details></div>
+
+        <!-- 3 販売期間 -->
+        <div class="sec"><details><summary><span class="n">3</span> 販売期間・宿泊対象期間の変更</summary><div class="body">
+          <div><label class="fld">対象プラン</label><input type="text" data-f="販売_対象プラン"></div>
+          <div class="row2">
+            <div><label class="fld">現在の販売期間 開始</label><input type="date" data-f="販売_現在開始"></div>
+            <div><label class="fld">現在の販売期間 終了</label><input type="date" data-f="販売_現在終了"></div>
+          </div>
+          <div class="row2">
+            <div><label class="fld">変更後の販売期間 開始</label><input type="date" data-f="販売_変更開始"></div>
+            <div><label class="fld">変更後の販売期間 終了</label><input type="date" data-f="販売_変更終了"></div>
+          </div>
+          <label class="fld">変更理由</label><textarea data-f="販売_理由" style="min-height:50px"></textarea>
+        </div></details></div>
+
+        <!-- 4 キャンペーン -->
+        <div class="sec"><details><summary><span class="n">4</span> キャンペーン・割引の変更</summary><div class="body">
+          <div class="row2">
+            <div><label class="fld">キャンペーン名</label><input type="text" data-f="CP_名称"></div>
+            <div><label class="fld">対象客室</label><input type="text" data-f="CP_客室"></div>
+          </div>
+          <div class="row2">
+            <div><label class="fld">実施期間 開始</label><input type="date" data-f="CP_実施開始"></div>
+            <div><label class="fld">実施期間 終了</label><input type="date" data-f="CP_実施終了"></div>
+          </div>
+          <div class="row2">
+            <div><label class="fld">現在内容</label><input type="text" data-f="CP_現在"></div>
+            <div><label class="fld">変更後</label><input type="text" data-f="CP_変更後"></div>
+          </div>
+          <div class="row2">
+            <div><label class="fld">割引率／特典</label><input type="text" data-f="CP_割引" placeholder="例）10%OFF / 1,000円OFF / ポイント5倍"></div>
+            <div><label class="fld">併用条件</label>
+              <div class="checks">
+                <label><input type="checkbox" data-f="CP_併用" data-multi value="併用可">併用可</label>
+                <label><input type="checkbox" data-f="CP_併用" data-multi value="併用不可">併用不可</label>
+                <label><input type="checkbox" data-f="CP_併用" data-multi value="条件あり">条件あり</label>
+              </div></div>
+          </div>
+        </div></details></div>
+
+        <!-- 5 在庫 -->
+        <div class="sec"><details><summary><span class="n">5</span> 在庫数の変更</summary><div class="body">
+          <div class="row2">
+            <div><label class="fld">対象日／期間</label><input type="text" data-f="在庫_期間"></div>
+            <div><label class="fld">対象客室</label><input type="text" data-f="在庫_客室"></div>
+          </div>
+          <div class="row3">
+            <div><label class="fld">現在販売在庫（室）</label><input type="number" data-f="在庫_現在"></div>
+            <div><label class="fld">変更後（室）</label><input type="number" data-f="在庫_変更後"></div>
+            <div><label class="fld">全OTA共通</label>
+              <div class="checks">
+                <label><input type="checkbox" data-f="在庫_共通" data-multi value="はい">はい</label>
+                <label><input type="checkbox" data-f="在庫_共通" data-multi value="いいえ">いいえ</label>
+              </div></div>
+          </div>
+          <label class="fld">理由</label><input type="text" data-f="在庫_理由">
+        </div></details></div>
+
+        <!-- 6 プラン掲載 -->
+        <div class="sec"><details><summary><span class="n">6</span> プランの掲載開始・停止・再開</summary><div class="body">
+          <div class="row2">
+            <div><label class="fld">対象プラン</label><input type="text" data-f="掲載_対象プラン"></div>
+            <div><label class="fld">変更日</label><input type="date" data-f="掲載_変更日"></div>
+          </div>
+          <label class="fld">対応</label>
+          <div class="checks">
+            <label><input type="checkbox" data-f="掲載_対応" data-multi value="掲載開始">掲載開始</label>
+            <label><input type="checkbox" data-f="掲載_対応" data-multi value="一時停止">一時停止</label>
+            <label><input type="checkbox" data-f="掲載_対応" data-multi value="掲載終了">掲載終了</label>
+            <label><input type="checkbox" data-f="掲載_対応" data-multi value="再掲載">再掲載</label>
+          </div>
+          <label class="fld">理由</label><input type="text" data-f="掲載_理由">
+        </div></details></div>
+
+        <!-- 7 OTA個別指示 -->
+        <div class="sec"><details><summary><span class="n">7</span> OTAごとの個別指示</summary><div class="body">
+          <div class="table-scroll"><table class="tbl">
+            <thead><tr><th style="width:22%">OTA</th><th>変更内容</th><th style="width:28%">備考・除外条件</th></tr></thead>
+            <tbody>
+              <tr><td>楽天トラベル</td><td><input type="text" data-f="個別_楽天_内容"></td><td><input type="text" data-f="個別_楽天_備考"></td></tr>
+              <tr><td>じゃらん</td><td><input type="text" data-f="個別_じゃらん_内容"></td><td><input type="text" data-f="個別_じゃらん_備考"></td></tr>
+              <tr><td>Booking.com</td><td><input type="text" data-f="個別_Booking_内容"></td><td><input type="text" data-f="個別_Booking_備考"></td></tr>
+              <tr><td>Expedia</td><td><input type="text" data-f="個別_Expedia_内容"></td><td><input type="text" data-f="個別_Expedia_備考"></td></tr>
+              <tr><td>Agoda</td><td><input type="text" data-f="個別_Agoda_内容"></td><td><input type="text" data-f="個別_Agoda_備考"></td></tr>
+            </tbody>
+          </table></div>
+        </div></details></div>
+
+        <!-- 8 変更禁止 -->
+        <div class="sec"><details><summary><span class="n">8</span> 変更してはいけない項目</summary><div class="body">
+          <p class="lead" style="margin:0 0 8px">指示に含まれない項目は現在の設定を維持します。</p>
+          <div class="checks">
+            <label><input type="checkbox" data-f="禁止" data-multi value="キャンセルポリシー">キャンセルポリシー</label>
+            <label><input type="checkbox" data-f="禁止" data-multi value="チェックイン／アウト時間">チェックイン／アウト時間</label>
+            <label><input type="checkbox" data-f="禁止" data-multi value="食事条件">食事条件</label>
+            <label><input type="checkbox" data-f="禁止" data-multi value="客室名称">客室名称</label>
+            <label><input type="checkbox" data-f="禁止" data-multi value="施設基本情報">施設基本情報</label>
+            <label><input type="checkbox" data-f="禁止" data-multi value="写真">写真</label>
+            <label><input type="checkbox" data-f="禁止" data-multi value="施設説明文">施設説明文</label>
+          </div>
+          <label class="fld">その他</label><input type="text" data-f="禁止_その他">
+        </div></details></div>
+
+        <!-- 11 具体的指示 -->
+        <div class="sec"><details open><summary><span class="n">11</span> 営業担当からの具体的な指示</summary><div class="body">
+          <textarea data-f="具体指示" style="min-height:120px" placeholder="今回の指示内容を自由記述"></textarea>
+        </div></details></div>
+
+        <!-- 運用担当エリア（9・10） -->
+        <div class="sec" id="opSection"><details><summary><span class="n">運</span> 運用担当：作業完了チェック・報告（section 9・10）</summary><div class="body">
+          <p class="lead" style="margin:0 0 8px">このエリアは運用担当・マスターのみ編集できます。</p>
+          <label class="fld">作業完了チェック</label>
+          <div class="checks" id="opChecks">
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="料金が指示どおり">各OTAの料金が指示どおり</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="販売期間が正しい">販売期間が正しい</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="宿泊対象期間が正しい">宿泊対象期間が正しい</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="割引率・特典が正しい">割引率・特典が正しい</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="対象曜日が正しい">対象曜日が正しい</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="対象客室が正しい">対象客室が正しい</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="CP開始終了が正しい">キャンペーン開始・終了日が正しい</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="停止対象が停止済み">停止対象プランが停止されている</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="不要な変更なし">指示外の項目を変更していない</label>
+            <label><input type="checkbox" data-f="完了_チェック" data-multi value="表示確認済み">公開画面（PC／スマホ）で表示確認済み</label>
+          </div>
+          <div class="row3">
+            <div><label class="fld">作業担当者</label><input type="text" data-f="報告_担当者"></div>
+            <div><label class="fld">作業完了日</label><input type="date" data-f="報告_完了日"></div>
+            <div><label class="fld">完了時刻</label><input type="time" data-f="報告_完了時刻"></div>
+          </div>
+          <label class="fld">未完了／要確認</label><textarea data-f="報告_要確認" style="min-height:50px"></textarea>
+          <label class="fld">備考</label><textarea data-f="報告_備考" style="min-height:50px"></textarea>
+        </div></details></div>
+
+        <!-- 操作 -->
+        <div class="panel no-print" style="position:sticky;bottom:0;margin:0;box-shadow:0 -4px 16px rgba(20,30,60,.08)">
+          <div class="btn-row">
+            <button class="btn ghost" onclick="showView('list')">← 一覧へ</button>
+            <button class="btn ghost" onclick="window.print()">🖨 印刷 / PDF</button>
+            <button class="btn ghost" onclick="aiGenerateDoc()" data-can="edit">✨ 清書テキスト</button>
+            <button class="btn ghost" onclick="exportOne()">⬇ CSV</button>
+            <div class="spacer"></div>
+            <select id="statusSel" style="width:auto" data-can="status"></select>
+            <button class="btn danger" onclick="deleteCurrent()" data-can="delete">削除</button>
+            <button class="btn primary" onclick="saveInstruction()" data-can="edit">💾 保存</button>
+          </div>
+          <div id="docArea" class="hidden" style="margin-top:14px">
+            <div class="doc" id="docOut" contenteditable="true"></div>
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn ghost sm" onclick="copyDoc()">📋 コピー</button>
+              <button class="btn ghost sm" onclick="downloadDoc()">⬇ テキスト保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ユーザー管理 -->
+    <div id="view-users" class="view hidden">
+      <div class="panel">
+        <h2>ユーザー管理（マスター専用）</h2>
+        <p class="lead">アカウントと権限を管理します。マスターのみがこの画面を操作できます。</p>
+        <div class="table-scroll"><table class="tbl">
+          <thead><tr><th>ユーザーID</th><th>氏名</th><th>権限</th><th>状態</th><th style="width:140px">操作</th></tr></thead>
+          <tbody id="userBody"></tbody>
+        </table></div>
+        <div class="btn-row" style="margin-top:14px"><button class="btn primary" onclick="openUserModal()">＋ ユーザー追加</button></div>
+        <div class="note">
+          <b>権限の説明</b>
+          🟣 マスター：全機能＋ユーザー管理。
+          🔵 営業：指示書の作成・編集・提出、AI利用。
+          🟠 運用：提出済み指示書の閲覧・作業チェック・完了報告。
+          ⚪ 閲覧：閲覧のみ。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API設定モーダル -->
+<div class="modal-bg hidden" id="keyModal"><div class="modal">
+  <h3>Claude API 設定</h3>
+  <p>AIによる自動記入・清書に使用します。キーはこのブラウザ内(localStorage)のみに保存されます。マスター専用。</p>
+  <label class="fld">APIキー</label><input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+  <label class="fld">モデル</label>
+  <select id="modelSelect">
+    <option value="claude-sonnet-5">claude-sonnet-5（推奨）</option>
+    <option value="claude-opus-4-8">claude-opus-4-8（高精度）</option>
+    <option value="claude-haiku-4-5-20251001">claude-haiku-4-5（軽量）</option>
+  </select>
+  <div class="btn-row" style="margin-top:16px"><button class="btn ghost" onclick="closeKeyModal()">閉じる</button><div class="spacer"></div><button class="btn primary" onclick="saveKey()">保存</button></div>
+</div></div>
+
+<!-- ユーザー追加/編集モーダル -->
+<div class="modal-bg hidden" id="userModal"><div class="modal">
+  <h3 id="userModalTitle">ユーザー追加</h3>
+  <input type="hidden" id="userEditId">
+  <label class="fld">ユーザーID（メール）</label><input type="text" id="uId">
+  <label class="fld">氏名</label><input type="text" id="uName">
+  <label class="fld">権限</label>
+  <select id="uRole">
+    <option value="master">マスター（全権限）</option>
+    <option value="sales">営業（作成・編集）</option>
+    <option value="operator">運用（作業・報告）</option>
+    <option value="viewer">閲覧のみ</option>
+  </select>
+  <label class="fld" id="uPwLabel">パスワード</label><input type="password" id="uPw" placeholder="8文字以上推奨">
+  <label class="fld">状態</label>
+  <select id="uActive"><option value="1">有効</option><option value="0">無効</option></select>
+  <div class="btn-row" style="margin-top:16px"><button class="btn ghost" onclick="closeUserModal()">キャンセル</button><div class="spacer"></div><button class="btn primary" onclick="saveUser()">保存</button></div>
+</div></div>
 
 <script>
-/* ============================================================
-   状態管理
-   ============================================================ */
-const STATE = {
-  step: 0,
-  hotelName: "",
-  salesName: "",
-  memo: "",
-  rawData: [],        // 元掲載データ（オブジェクト配列）
-  rawHeaders: [],
-  dataFileNames: [],
-  changes: [],        // {item, before, after, type, note}
+/* =========================================================================
+   ストレージ & セキュリティ（デモ用フロントエンド認証）
+   ========================================================================= */
+const LS = { users:"ota_users", key:"ota_apikey", model:"ota_model", data:"ota_records", seq:"ota_seq" };
+const SS = { session:"ota_session" };
+const MASTER_EMAIL = "s.sugawa@classix.life"; // 初期マスター
+const ROLE_LABEL = { master:"マスター", sales:"営業", operator:"運用", viewer:"閲覧" };
+
+let CUR = null;        // ログイン中ユーザー
+let RECORD = null;     // 編集中レコード
+
+async function sha256(str){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function genSalt(){ return crypto.getRandomValues(new Uint32Array(4)).join("-"); }
+async function hashPw(pw, salt){ return sha256(salt + "|" + pw); }
+
+function readJSON(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } }
+function writeJSON(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+/* 初回起動：マスターアカウント作成フロー */
+async function ensureUsers(){
+  let users = readJSON(LS.users, null);
+  if (!users || !users.length){
+    // 初回：マスターのパスワード設定を促す
+    document.getElementById("loginId").value = MASTER_EMAIL;
+    const note = document.getElementById("firstRunNote");
+    note.classList.remove("hidden");
+    note.innerHTML = "🎉 初回起動です。マスター（<b>"+MASTER_EMAIL+"</b>）の初期パスワードを上のパスワード欄に入力して「ログイン」を押すと、その内容で登録されます。";
+    return null;
+  }
+  return users;
+}
+
+async function doLogin(){
+  const id = document.getElementById("loginId").value.trim().toLowerCase();
+  const pw = document.getElementById("loginPw").value;
+  const errEl = document.getElementById("loginErr");
+  const show = m => { errEl.textContent = m; errEl.classList.remove("hidden"); };
+  errEl.classList.add("hidden");
+  if (!id || !pw){ show("IDとパスワードを入力してください。"); return; }
+
+  let users = readJSON(LS.users, null);
+  // 初回登録
+  if (!users || !users.length){
+    if (id !== MASTER_EMAIL.toLowerCase()){ show("初回はマスター("+MASTER_EMAIL+")で登録してください。"); return; }
+    if (pw.length < 6){ show("パスワードは6文字以上にしてください。"); return; }
+    const salt = genSalt();
+    users = [{ id:MASTER_EMAIL.toLowerCase(), name:"マスター", role:"master", active:1, salt, hash:await hashPw(pw,salt), fails:0, lockUntil:0 }];
+    writeJSON(LS.users, users);
+    toast("マスターアカウントを登録しました");
+  }
+
+  const u = users.find(x=>x.id===id);
+  if (!u){ show("IDまたはパスワードが違います。"); return; }
+  if (!u.active){ show("このアカウントは無効化されています。"); return; }
+  if (u.lockUntil && Date.now() < u.lockUntil){
+    show("試行回数が上限に達しました。しばらく待って再度お試しください。"); return;
+  }
+  const ok = (await hashPw(pw, u.salt)) === u.hash;
+  if (!ok){
+    u.fails = (u.fails||0)+1;
+    if (u.fails >= 5){ u.lockUntil = Date.now()+5*60*1000; u.fails=0; }
+    writeJSON(LS.users, users);
+    show("IDまたはパスワードが違います。"); return;
+  }
+  u.fails = 0; u.lockUntil = 0; writeJSON(LS.users, users);
+  CUR = { id:u.id, name:u.name, role:u.role };
+  sessionStorage.setItem(SS.session, JSON.stringify(CUR));
+  document.getElementById("loginPw").value = "";
+  enterApp();
+}
+function doLogout(){ sessionStorage.removeItem(SS.session); CUR=null; location.reload(); }
+
+/* =========================================================================
+   権限
+   ========================================================================= */
+const CAP = {
+  master:   { create:true, edit:true, delete:true, status:true, users:true, ai:true, op:true },
+  sales:    { create:true, edit:true, delete:true, status:true, users:false, ai:true, op:false },
+  operator: { create:false, edit:false, delete:false, status:true, users:false, ai:false, op:true },
+  viewer:   { create:false, edit:false, delete:false, status:false, users:false, ai:false, op:false },
 };
-const STEPS = [
-  { title: "案件情報・取込", desc: "ヒアリング内容を投入" },
-  { title: "変更内容の整理", desc: "変更点を一覧化" },
-  { title: "申請書を生成", desc: "AIで新書を作成" },
-  { title: "反映データ出力", desc: "掲載用データを書き出し" },
-];
+function can(cap){ return !!(CUR && CAP[CUR.role] && CAP[CUR.role][cap]); }
 
-/* ============================================================
-   永続化（localStorage）
-   ============================================================ */
-const LS = {
-  key: "hbcs_apiKey",
-  model: "hbcs_model",
-  data: "hbcs_state",
-};
-function saveState() {
-  STATE.hotelName = val("hotelName");
-  STATE.salesName = val("salesName");
-  STATE.memo = val("memoText");
-  try { localStorage.setItem(LS.data, JSON.stringify(STATE)); } catch(e){}
-}
-function loadState() {
-  try {
-    const s = JSON.parse(localStorage.getItem(LS.data) || "null");
-    if (s) Object.assign(STATE, s);
-  } catch(e){}
+function applyPermissionsUI(){
+  // マスター専用ボタン
+  document.querySelectorAll("[data-master]").forEach(el=>el.classList.toggle("hidden", CUR.role!=="master"));
+  // capabilityでボタン表示
+  document.querySelectorAll("[data-can]").forEach(el=>el.classList.toggle("hidden", !can(el.dataset.can)));
 }
 
-/* ============================================================
-   ユーティリティ
-   ============================================================ */
-function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ""; }
-function toast(msg){
-  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
-  document.body.appendChild(t); setTimeout(()=>t.remove(), 2600);
+/* =========================================================================
+   アプリ起動
+   ========================================================================= */
+function enterApp(){
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("appView").classList.remove("hidden");
+  document.getElementById("meName").textContent = CUR.name + "（" + CUR.id + "）";
+  document.getElementById("meRole").textContent = ROLE_LABEL[CUR.role];
+  applyPermissionsUI();
+  buildStatusSelect();
+  showView("list");
 }
-function esc(s){ return (s??"").toString().replace(/[&<>]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
 
-/* ============================================================
-   ステップナビ
-   ============================================================ */
-function renderNav(){
-  const nav = document.getElementById("stepNav");
-  nav.innerHTML = STEPS.map((s,i)=>`
-    <div class="step ${i===STATE.step?'active':''} ${i<STATE.step?'done':''}" onclick="goStep(${i})">
-      <div><span class="step-num">${i<STATE.step?'✓':i+1}</span><span class="step-title">${s.title}</span></div>
-      <div class="step-desc">${s.desc}</div>
-    </div>`).join("");
+function showView(v){
+  document.querySelectorAll(".view").forEach(el=>el.classList.add("hidden"));
+  document.getElementById("view-"+v).classList.remove("hidden");
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on", b.dataset.view===v));
+  if (v==="list") renderList();
+  if (v==="users"){ if(CUR.role!=="master"){ showView("list"); return; } renderUsers(); }
 }
-function goStep(n){
-  saveState();
-  STATE.step = n;
-  document.querySelectorAll("[data-step]").forEach(el=>{
-    el.classList.toggle("hidden", Number(el.dataset.step)!==n);
+
+/* =========================================================================
+   レコード（指示書）
+   ========================================================================= */
+const STATUS = { draft:"作成中", submitted:"提出済み", working:"作業中", done:"完了" };
+const STATUS_CLASS = { draft:"st-draft", submitted:"st-submitted", working:"st-working", done:"st-done" };
+
+function loadRecords(){ return readJSON(LS.data, []); }
+function saveRecords(r){ writeJSON(LS.data, r); }
+function nextId(){ let n=readJSON(LS.seq,1000)+1; writeJSON(LS.seq,n); return "OTA-"+n; }
+
+function renderList(){
+  const recs = loadRecords().sort((a,b)=>(b.updated||"").localeCompare(a.updated||""));
+  const c = document.getElementById("cardList");
+  document.getElementById("listEmpty").classList.toggle("hidden", recs.length>0);
+  c.innerHTML = recs.map(r=>{
+    const f = r.fields||{};
+    const pri = (f["優先度"]||[])[0]||"";
+    const ota = (f["対象OTA"]||[]).slice(0,3).join("・") + ((f["対象OTA"]||[]).length>3?" 他":"");
+    return `<div class="card" onclick="openInstruction('${r.id}')">
+      <div class="btn-row" style="margin-bottom:6px"><span class="status ${STATUS_CLASS[r.status]}">${STATUS[r.status]}</span>
+        ${pri?`<span class="pri-${pri}">優先度：${pri}</span>`:""}<div class="spacer"></div><span class="meta">${r.id}</span></div>
+      <h3>${escapeHtml(f["施設名"]||"（施設名未入力）")}</h3>
+      <div class="meta">営業：${escapeHtml(f["営業担当"]||"—")}｜対象OTA：${escapeHtml(ota||"—")}</div>
+      <div class="meta">変更希望：${f["変更希望日"]||"—"}｜更新：${(r.updated||"").slice(0,10)}</div>
+    </div>`;
+  }).join("");
+}
+
+function newInstruction(){
+  if (!can("create")){ toast("この権限では新規作成できません"); return; }
+  RECORD = { id:nextId(), status:"draft", createdBy:CUR.id, created:new Date().toISOString(), updated:new Date().toISOString(), fields:{} };
+  openEditor(true);
+}
+function openInstruction(id){
+  RECORD = loadRecords().find(r=>r.id===id);
+  if (!RECORD){ toast("見つかりません"); return; }
+  openEditor(false);
+}
+function openEditor(isNew){
+  showViewRaw("edit");
+  document.getElementById("editTitle").textContent = (isNew?"新規 ":RECORD.id+"　") + "OTA掲載内容 変更指示書";
+  const st = document.getElementById("editStatus");
+  st.className = "status "+STATUS_CLASS[RECORD.status]; st.textContent = STATUS[RECORD.status];
+  populateForm(RECORD.fields);
+  document.getElementById("statusSel").value = RECORD.status;
+  document.getElementById("memoText").value = RECORD.memo||"";
+  document.getElementById("docArea").classList.add("hidden");
+  // 運用エリアの編集可否
+  const opEditable = can("op");
+  document.querySelectorAll('#opSection input, #opSection textarea').forEach(el=>el.disabled = !opEditable);
+  // 全体：editできない権限は全項目readonly
+  const formEditable = can("edit");
+  document.querySelectorAll('#view-edit [data-f]').forEach(el=>{
+    if (el.closest("#opSection")) return; // 運用エリアは別制御
+    el.disabled = !formEditable;
   });
-  renderNav();
-  if (n===1){ renderChangeTable(); renderRawData(); }
-  if (n===3){ renderOutput(); }
-  window.scrollTo({top:0, behavior:"smooth"});
-  saveState();
+  window.scrollTo({top:0});
+}
+function showViewRaw(v){ // ナビ状態も更新して編集ビューへ
+  document.querySelectorAll(".view").forEach(el=>el.classList.add("hidden"));
+  document.getElementById("view-"+v).classList.remove("hidden");
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.remove("on"));
 }
 
-/* ============================================================
-   API キー
-   ============================================================ */
-function refreshKeyStatus(){
-  const k = localStorage.getItem(LS.key);
-  document.getElementById("keyDot").classList.toggle("ok", !!k);
-  document.getElementById("keyLabel").textContent = k ? "APIキー設定済み" : "APIキー未設定";
+function buildStatusSelect(){
+  const sel = document.getElementById("statusSel");
+  sel.innerHTML = Object.entries(STATUS).map(([k,v])=>`<option value="${k}">状態：${v}</option>`).join("");
 }
-function openKeyModal(){
-  document.getElementById("apiKeyInput").value = localStorage.getItem(LS.key) || "";
-  document.getElementById("modelSelect").value = localStorage.getItem(LS.model) || "claude-sonnet-5";
-  document.getElementById("keyModal").classList.remove("hidden");
+
+/* フォーム ⇔ オブジェクト */
+function collectForm(){
+  const f = {};
+  document.querySelectorAll('#view-edit [data-f]').forEach(el=>{
+    const key = el.dataset.f;
+    if (el.type==="checkbox" && el.dataset.multi!==undefined){
+      if (!Array.isArray(f[key])) f[key]=[];
+      if (el.checked) f[key].push(el.value);
+    } else {
+      f[key] = el.value;
+    }
+  });
+  return f;
 }
+function populateForm(f){
+  document.querySelectorAll('#view-edit [data-f]').forEach(el=>{
+    const key = el.dataset.f; const v = f[key];
+    if (el.type==="checkbox" && el.dataset.multi!==undefined){
+      el.checked = Array.isArray(v) && v.includes(el.value);
+    } else {
+      el.value = v ?? "";
+    }
+  });
+}
+
+function saveInstruction(){
+  if (!can("edit") && !can("op")){ toast("保存権限がありません"); return; }
+  const fields = collectForm();
+  // op権限のみの人は運用フィールド以外の変更を破棄（読み取り専用のはずだがガード）
+  RECORD.fields = fields;
+  RECORD.memo = document.getElementById("memoText").value;
+  RECORD.status = document.getElementById("statusSel").value;
+  RECORD.updated = new Date().toISOString();
+  const recs = loadRecords();
+  const i = recs.findIndex(r=>r.id===RECORD.id);
+  if (i>=0) recs[i]=RECORD; else recs.push(RECORD);
+  saveRecords(recs);
+  const st = document.getElementById("editStatus");
+  st.className="status "+STATUS_CLASS[RECORD.status]; st.textContent=STATUS[RECORD.status];
+  toast("保存しました（"+RECORD.id+"）");
+}
+function deleteCurrent(){
+  if (!can("delete")){ toast("削除権限がありません"); return; }
+  if (!confirm("この指示書を削除しますか？")) return;
+  saveRecords(loadRecords().filter(r=>r.id!==RECORD.id));
+  toast("削除しました"); showView("list");
+}
+
+/* =========================================================================
+   出力
+   ========================================================================= */
+function flat(f){
+  const o={};
+  for (const [k,v] of Object.entries(f)) o[k]=Array.isArray(v)?v.join("／"):v;
+  return o;
+}
+function exportOne(){
+  const row = { ID:RECORD.id, ステータス:STATUS[RECORD.status], ...flat(RECORD.fields) };
+  const ws = XLSX.utils.json_to_sheet([row]);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  downloadBlob(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"}), (RECORD.fields["施設名"]||"指示書")+"_"+RECORD.id+".csv");
+}
+function downloadBlob(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
+
+/* =========================================================================
+   AI（Claude API）
+   ========================================================================= */
+function openKeyModal(){ document.getElementById("apiKeyInput").value=localStorage.getItem(LS.key)||""; document.getElementById("modelSelect").value=localStorage.getItem(LS.model)||"claude-sonnet-5"; document.getElementById("keyModal").classList.remove("hidden"); }
 function closeKeyModal(){ document.getElementById("keyModal").classList.add("hidden"); }
-function saveKey(){
-  const k = val("apiKeyInput");
-  localStorage.setItem(LS.key, k);
-  localStorage.setItem(LS.model, document.getElementById("modelSelect").value);
-  refreshKeyStatus(); closeKeyModal(); toast("API設定を保存しました");
-}
+function saveKey(){ localStorage.setItem(LS.key,document.getElementById("apiKeyInput").value.trim()); localStorage.setItem(LS.model,document.getElementById("modelSelect").value); closeKeyModal(); toast("API設定を保存しました"); }
 
-/* ============================================================
-   Claude API 呼び出し
-   ============================================================ */
-async function callClaude(system, user, maxTokens=2000){
+async function callClaude(system, user, maxTokens=2500){
   const key = localStorage.getItem(LS.key);
-  if (!key){ openKeyModal(); throw new Error("APIキーが未設定です"); }
-  const model = localStorage.getItem(LS.model) || "claude-sonnet-5";
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
+  if (!key){ toast("先にAPIキーを設定してください"); openKeyModal(); throw new Error("no key"); }
+  const model = localStorage.getItem(LS.model)||"claude-sonnet-5";
+  const res = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{ "content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true" },
+    body:JSON.stringify({ model, max_tokens:maxTokens, system, messages:[{role:"user",content:user}] })
   });
-  if (!res.ok){
-    let msg = "APIエラー ("+res.status+")";
-    try { const j = await res.json(); msg += ": " + (j.error?.message||""); } catch(e){}
-    throw new Error(msg);
-  }
-  const j = await res.json();
-  return (j.content||[]).map(c=>c.text||"").join("");
+  if (!res.ok){ let m="APIエラー("+res.status+")"; try{const j=await res.json(); m+=": "+(j.error?.message||"");}catch(e){} throw new Error(m); }
+  const j = await res.json(); return (j.content||[]).map(c=>c.text||"").join("");
+}
+function extractJSON(s){ try{return JSON.parse(s);}catch(e){} const m=s.match(/\{[\s\S]*\}/); if(m){try{return JSON.parse(m[0]);}catch(e){}} return null; }
+
+async function aiFillForm(){
+  if (!can("ai")){ toast("この権限ではAIを利用できません"); return; }
+  const memo = document.getElementById("memoText").value.trim();
+  if (!memo){ toast("メモを入力してください"); return; }
+  const btn=document.getElementById("btnAiFill"), st=document.getElementById("aiFillSt");
+  btn.disabled=true; st.innerHTML=`<span class="spinner d"></span> 解析中...`;
+  try{
+    const system="あなたはホテルのOTA掲載管理アシスタントです。営業のヒアリングメモから『OTA掲載内容 変更指示書』のフィールドを埋めます。日付はYYYY-MM-DD。該当しない項目は空でよい。指定JSONのみ出力し説明文を付けない。";
+    const user =
+`次のメモから指示書フィールドをJSONで抽出してください。キーは次の通り（配列指定のものは該当する値の配列）:
+施設名, 営業担当, 優先度[高/中/低], 指示日(YYYY-MM-DD), 変更希望日,
+対象OTA[楽天トラベル/じゃらん/Booking.com/Expedia/Agoda/一休.com/自社予約サイト], 対象OTA_その他,
+料金_対象プラン, 料金_対象客室, 料金_現在, 料金_変更後, 料金_期間開始, 料金_期間終了, 料金_曜日[月火水木金土日祝前日], 料金_理由,
+販売_対象プラン, 販売_現在開始, 販売_現在終了, 販売_変更開始, 販売_変更終了, 販売_理由,
+CP_名称, CP_客室, CP_実施開始, CP_実施終了, CP_現在, CP_変更後, CP_割引, CP_併用[併用可/併用不可/条件あり],
+在庫_期間, 在庫_客室, 在庫_現在, 在庫_変更後, 在庫_共通[はい/いいえ], 在庫_理由,
+掲載_対象プラン, 掲載_変更日, 掲載_対応[掲載開始/一時停止/掲載終了/再掲載], 掲載_理由,
+個別_楽天_内容, 個別_じゃらん_内容, 個別_Booking_内容, 個別_Expedia_内容, 個別_Agoda_内容,
+禁止[キャンセルポリシー/チェックイン／アウト時間/食事条件/客室名称/施設基本情報/写真/施設説明文], 禁止_その他,
+具体指示(メモを整えた指示本文).
+出力は {"fields":{...}} のJSONのみ。
+
+【メモ】
+${memo}`;
+    const out = await callClaude(system, user, 2500);
+    const p = extractJSON(out);
+    if (p && p.fields){
+      const cur = collectForm();
+      // AI結果で上書き（配列も反映）
+      const merged = { ...cur, ...p.fields };
+      populateForm(merged);
+      toast("メモから指示書を自動記入しました");
+    } else { toast("解析に失敗しました"); }
+  }catch(e){ toast(e.message); }
+  finally{ btn.disabled=false; st.textContent=""; }
 }
 
-/* ============================================================
-   ファイル取込
-   ============================================================ */
-function setupDropzone(dzId, inputId, handler){
-  const dz = document.getElementById(dzId);
-  const input = document.getElementById(inputId);
-  dz.addEventListener("click", ()=>input.click());
-  input.addEventListener("change", e=>{ if(e.target.files.length) handler(e.target.files); input.value=""; });
-  ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add("drag"); }));
-  ["dragleave","dragend","drop"].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove("drag"); }));
-  dz.addEventListener("drop", e=>{ if(e.dataTransfer.files.length) handler(e.dataTransfer.files); });
+async function aiGenerateDoc(){
+  if (!can("ai")){ toast("この権限ではAIを利用できません"); return; }
+  const f = collectForm();
+  const area=document.getElementById("docArea"), out=document.getElementById("docOut");
+  area.classList.remove("hidden"); out.textContent="生成中...";
+  try{
+    const system="あなたはホテルOTA掲載管理の事務アシスタントです。指示書フィールドから、運用担当がそのまま作業できる明確な『OTA掲載内容 変更指示書（清書）』を日本語ビジネス文書で作成します。装飾記号(#や*)は使わない。";
+    const user="以下のフィールドから清書された指示書を作成:\n"+JSON.stringify(flat(f),null,1)+"\n\n要件: 冒頭に施設名・営業担当・指示日、対象OTA、変更内容を番号付きで（項目/現在/変更後）、変更禁止項目の明記、末尾に確認事項。運用担当が迷わない作業指示に。";
+    out.textContent = (await callClaude(system, user, 3000)).trim();
+    toast("清書を生成しました");
+  }catch(e){ out.textContent="（生成失敗）"; toast(e.message); }
 }
+function copyDoc(){ navigator.clipboard.writeText(document.getElementById("docOut").textContent).then(()=>toast("コピーしました")); }
+function downloadDoc(){ downloadBlob(new Blob([document.getElementById("docOut").textContent],{type:"text/plain;charset=utf-8"}), "指示書清書_"+RECORD.id+".txt"); }
 
-function handleDataFiles(files){
-  Array.from(files).forEach(file=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
-      try {
-        const wb = XLSX.read(e.target.result, { type:"array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval:"" });
-        if (rows.length){
-          STATE.rawData = rows;
-          STATE.rawHeaders = Object.keys(rows[0]);
-        }
-        if (!STATE.dataFileNames.includes(file.name)) STATE.dataFileNames.push(file.name);
-        renderDataFiles();
-        toast(`${file.name} を取り込みました（${rows.length}行）`);
-        saveState();
-      } catch(err){ toast("読込失敗: "+err.message); }
-    };
-    reader.readAsArrayBuffer(file);
-  });
-}
-function renderDataFiles(){
-  const c = document.getElementById("dataFiles");
-  c.innerHTML = STATE.dataFileNames.map((n,i)=>`
-    <div class="file-chip">📊 ${esc(n)} <span class="x" onclick="removeDataFile(${i})">✕</span></div>`).join("");
-}
-function removeDataFile(i){
-  STATE.dataFileNames.splice(i,1);
-  if (!STATE.dataFileNames.length){ STATE.rawData=[]; STATE.rawHeaders=[]; }
-  renderDataFiles(); saveState();
-}
-function handleMemoFiles(files){
-  const reader = new FileReader();
-  reader.onload = e=>{
-    const ta = document.getElementById("memoText");
-    ta.value = (ta.value ? ta.value+"\n\n" : "") + e.target.result;
-    saveState(); toast("メモを取り込みました");
-  };
-  reader.readAsText(files[0]);
-}
-
-/* ============================================================
-   変更点テーブル
-   ============================================================ */
-function renderChangeTable(){
-  const body = document.getElementById("changeBody");
-  if (!STATE.changes.length){
-    body.innerHTML = `<tr><td colspan="5" class="empty">まだ変更点がありません。「AIで自動抽出」または「行を追加」してください。</td></tr>`;
-    return;
-  }
-  body.innerHTML = STATE.changes.map((c,i)=>`
+/* =========================================================================
+   ユーザー管理（マスター）
+   ========================================================================= */
+function renderUsers(){
+  const users = readJSON(LS.users, []);
+  document.getElementById("userBody").innerHTML = users.map(u=>`
     <tr>
-      <td contenteditable oninput="editChange(${i},'item',this)">${esc(c.item)}</td>
-      <td contenteditable oninput="editChange(${i},'before',this)">${esc(c.before)}</td>
-      <td contenteditable class="changed" oninput="editChange(${i},'after',this)">${esc(c.after)}</td>
-      <td>${typeSelect(i,c.type)}</td>
-      <td contenteditable oninput="editChange(${i},'note',this)">${esc(c.note)}
-        <div style="margin-top:4px;"><span class="x" style="cursor:pointer;color:var(--danger);font-size:11px;" onclick="delChange(${i})">削除</span></div>
+      <td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.name)}</td>
+      <td><span class="rolechip" style="background:#eef2ff;color:#4338ca">${ROLE_LABEL[u.role]}</span></td>
+      <td>${u.active?'<span class="status st-done">有効</span>':'<span class="status st-draft">無効</span>'}</td>
+      <td>
+        <button class="btn ghost sm" onclick="openUserModal('${u.id}')">編集</button>
+        ${u.role==="master"&&users.filter(x=>x.role==="master").length<=1?"":`<button class="btn danger sm" onclick="delUser('${u.id}')">削除</button>`}
       </td>
     </tr>`).join("");
 }
-function typeSelect(i, v){
-  const opts = [["mod","変更"],["add","追加"],["del","削除"],["keep","据置"]];
-  return `<select onchange="editChange(${i},'type',this)" style="padding:4px;font-size:12px;">
-    ${opts.map(o=>`<option value="${o[0]}" ${o[0]===v?'selected':''}>${o[1]}</option>`).join("")}
-  </select>`;
+function openUserModal(id){
+  const users=readJSON(LS.users,[]);
+  const u = id?users.find(x=>x.id===id):null;
+  document.getElementById("userModalTitle").textContent = u?"ユーザー編集":"ユーザー追加";
+  document.getElementById("userEditId").value = u?u.id:"";
+  document.getElementById("uId").value = u?u.id:""; document.getElementById("uId").disabled=!!u;
+  document.getElementById("uName").value = u?u.name:"";
+  document.getElementById("uRole").value = u?u.role:"sales";
+  document.getElementById("uActive").value = u?(u.active?"1":"0"):"1";
+  document.getElementById("uPw").value="";
+  document.getElementById("uPwLabel").textContent = u?"パスワード（変更する場合のみ入力）":"パスワード";
+  document.getElementById("userModal").classList.remove("hidden");
 }
-function editChange(i, field, el){
-  STATE.changes[i][field] = el.value!==undefined ? el.value : el.textContent;
-  saveState();
+function closeUserModal(){ document.getElementById("userModal").classList.add("hidden"); }
+async function saveUser(){
+  const editId=document.getElementById("userEditId").value;
+  const id=document.getElementById("uId").value.trim().toLowerCase();
+  const name=document.getElementById("uName").value.trim()||id;
+  const role=document.getElementById("uRole").value;
+  const active=document.getElementById("uActive").value==="1"?1:0;
+  const pw=document.getElementById("uPw").value;
+  if (!id){ toast("IDを入力してください"); return; }
+  let users=readJSON(LS.users,[]);
+  if (editId){
+    const u=users.find(x=>x.id===editId);
+    u.name=name; u.role=role; u.active=active;
+    if (pw){ if(pw.length<6){toast("パスワードは6文字以上");return;} u.salt=genSalt(); u.hash=await hashPw(pw,u.salt); }
+  } else {
+    if (users.find(x=>x.id===id)){ toast("同じIDが既に存在します"); return; }
+    if (pw.length<6){ toast("パスワードは6文字以上"); return; }
+    const salt=genSalt();
+    users.push({ id, name, role, active, salt, hash:await hashPw(pw,salt), fails:0, lockUntil:0 });
+  }
+  writeJSON(LS.users, users);
+  closeUserModal(); renderUsers(); toast("ユーザーを保存しました");
 }
-function addChangeRow(){
-  STATE.changes.push({ item:"", before:"", after:"", type:"mod", note:"" });
-  renderChangeTable(); saveState();
-}
-function delChange(i){ STATE.changes.splice(i,1); renderChangeTable(); saveState(); }
-
-function renderRawData(){
-  const c = document.getElementById("rawDataView");
-  if (!STATE.rawData.length){ c.innerHTML = `<div class="empty">元データが取り込まれていません。</div>`; return; }
-  const h = STATE.rawHeaders;
-  c.innerHTML = `<table class="data"><thead><tr>${h.map(x=>`<th>${esc(x)}</th>`).join("")}</tr></thead>
-    <tbody>${STATE.rawData.slice(0,50).map(r=>`<tr>${h.map(x=>`<td>${esc(r[x])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-}
-
-/* ============================================================
-   AI: 変更点抽出
-   ============================================================ */
-async function aiExtractChanges(){
-  const memo = val("memoText") || STATE.memo;
-  if (!memo){ toast("変更依頼メモが空です"); return; }
-  const btn = document.getElementById("btnExtract");
-  const st = document.getElementById("extractStatus");
-  btn.disabled = true; st.innerHTML = `<span class="spinner dark" style="display:inline-block;vertical-align:middle;"></span> 抽出中...`;
-  try {
-    const rawSample = STATE.rawData.length
-      ? "\n\n【参考：既存の掲載データ（先頭数行）】\n" + JSON.stringify(STATE.rawData.slice(0,10), null, 0)
-      : "";
-    const system = "あなたはホテル掲載情報の変更を管理するアシスタントです。営業担当のヒアリングメモから、掲載内容の変更点を構造化して抽出します。必ず指定されたJSON形式のみを出力し、前後に説明文を付けないでください。";
-    const user =
-`次のヒアリングメモから、ホテル掲載内容の変更点を抽出してください。
-各変更点を以下のキーを持つオブジェクトの配列(JSON)で出力:
-- item: 変更対象の項目名（例: 素泊まりプラン料金, チェックイン時間, 大浴場, PR文 など）
-- before: 現在の内容（不明なら空文字）
-- after: 変更後の内容
-- type: "mod"(変更) / "add"(追加) / "del"(削除) / "keep"(据置) のいずれか
-- note: 補足メモ（任意）
-
-出力は {"changes":[...]} の形のJSONのみ。
-
-【ヒアリングメモ】
-${memo}${rawSample}`;
-    const out = await callClaude(system, user, 2000);
-    const parsed = extractJSON(out);
-    if (parsed && Array.isArray(parsed.changes)){
-      STATE.changes = parsed.changes.map(c=>({
-        item:c.item||"", before:c.before||"", after:c.after||"",
-        type:["mod","add","del","keep"].includes(c.type)?c.type:"mod", note:c.note||""
-      }));
-      renderChangeTable(); saveState();
-      toast(`${STATE.changes.length}件の変更点を抽出しました`);
-    } else {
-      toast("抽出結果を解析できませんでした");
-    }
-  } catch(err){ toast(err.message); }
-  finally { btn.disabled=false; st.textContent=""; }
-}
-function extractJSON(s){
-  try { return JSON.parse(s); } catch(e){}
-  const m = s.match(/\{[\s\S]*\}/);
-  if (m){ try { return JSON.parse(m[0]); } catch(e){} }
-  return null;
+function delUser(id){
+  if (id===CUR.id){ toast("自分自身は削除できません"); return; }
+  let users=readJSON(LS.users,[]);
+  if (users.find(x=>x.id===id)?.role==="master" && users.filter(x=>x.role==="master").length<=1){ toast("最後のマスターは削除できません"); return; }
+  if (!confirm("削除しますか？")) return;
+  writeJSON(LS.users, users.filter(x=>x.id!==id)); renderUsers(); toast("削除しました");
 }
 
-/* ============================================================
-   AI: 申請書生成
-   ============================================================ */
-async function aiGenerateDoc(){
-  if (!STATE.changes.length){ toast("先に変更点を整理してください"); goStep(1); return; }
-  const btn = document.getElementById("btnGenDoc");
-  const st = document.getElementById("docStatus");
-  btn.disabled = true; st.innerHTML = `<span class="spinner dark" style="display:inline-block;vertical-align:middle;"></span> 生成中...`;
-  try {
-    const system = "あなたはホテル掲載管理の事務アシスタントです。営業担当が収集した変更点をもとに、サポート担当がそのまま作業できる正式な『掲載内容変更申請書』を日本語で作成します。丁寧かつ簡潔で、抜け漏れなく作業指示が伝わる文面にしてください。";
-    const user =
-`以下の情報から掲載内容変更申請書を作成してください。
+/* =========================================================================
+   ユーティリティ・初期化
+   ========================================================================= */
+function escapeHtml(s){ return (s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function toast(m){ const t=document.createElement("div"); t.className="toast"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
 
-ホテル名: ${STATE.hotelName || "（未記入）"}
-担当営業: ${STATE.salesName || "（未記入）"}
-申請日: ${new Date().toLocaleDateString("ja-JP")}
+function setupDrop(){
+  const dz=document.getElementById("dzMemo"), input=document.getElementById("fileMemo");
+  dz.addEventListener("click",()=>input.click());
+  input.addEventListener("change",e=>{ if(e.target.files.length) readMemo(e.target.files[0]); input.value=""; });
+  ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
+  ["dragleave","dragend","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
+  dz.addEventListener("drop",e=>{ if(e.dataTransfer.files.length) readMemo(e.dataTransfer.files[0]); });
+}
+function readMemo(file){ const r=new FileReader(); r.onload=e=>{ const ta=document.getElementById("memoText"); ta.value=(ta.value?ta.value+"\n\n":"")+e.target.result; toast("メモを取り込みました"); }; r.readAsText(file); }
 
-【変更点一覧】
-${STATE.changes.map((c,i)=>`${i+1}. [${jpType(c.type)}] ${c.item}\n   現在: ${c.before||"—"}\n   変更後: ${c.after||"—"}\n   備考: ${c.note||"—"}`).join("\n")}
-
-【元となったヒアリングメモ】
-${STATE.memo || val("memoText") || "（なし）"}
-
-出力要件:
-- 冒頭に「掲載内容変更申請書」の見出しと、ホテル名・担当・申請日
-- 変更内容を番号付きで整理（項目／現在／変更後／作業区分）
-- サポート担当が迷わないよう、各変更の作業指示を明確に
-- 最後に「特記事項・確認事項」欄
-- 装飾記号(#や*)は使わず、プレーンな日本語ビジネス文書として出力`;
-    const out = await callClaude(system, user, 3000);
-    document.getElementById("docOut").textContent = out.trim();
-    toast("申請書を生成しました");
-  } catch(err){ toast(err.message); }
-  finally { btn.disabled=false; st.textContent=""; }
-}
-function jpType(t){ return {mod:"変更",add:"追加",del:"削除",keep:"据置"}[t]||"変更"; }
-
-function copyDoc(){
-  const txt = document.getElementById("docOut").textContent;
-  navigator.clipboard.writeText(txt).then(()=>toast("コピーしました")).catch(()=>toast("コピー失敗"));
-}
-function downloadDoc(){
-  const txt = document.getElementById("docOut").textContent;
-  const name = `申請書_${STATE.hotelName||"ホテル"}_${new Date().toISOString().slice(0,10)}.txt`;
-  downloadBlob(new Blob([txt],{type:"text/plain;charset=utf-8"}), name);
-}
-
-/* ============================================================
-   出力（CSV / Excel）
-   ============================================================ */
-function renderOutput(){
-  const body = document.getElementById("outputBody");
-  if (!STATE.changes.length){ body.innerHTML = `<tr><td colspan="3" class="empty">変更点が未登録です。</td></tr>`; return; }
-  body.innerHTML = STATE.changes.map(c=>`
-    <tr>
-      <td>${esc(c.item)}</td>
-      <td>${esc(c.type==="del" ? "（削除）" : (c.after||c.before))}</td>
-      <td><span class="tag ${c.type}">${jpType(c.type)}</span></td>
-    </tr>`).join("");
-}
-function outputRows(){
-  return STATE.changes.map(c=>({
-    "項目": c.item,
-    "現在の内容": c.before,
-    "反映後の内容": c.type==="del" ? "（削除）" : c.after,
-    "変更区分": jpType(c.type),
-    "備考": c.note,
-  }));
-}
-function exportCSV(){
-  const rows = outputRows();
-  if (!rows.length){ toast("出力する変更点がありません"); return; }
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const csv = XLSX.utils.sheet_to_csv(ws);
-  const bom = "﻿"; // Excel文字化け対策
-  downloadBlob(new Blob([bom+csv],{type:"text/csv;charset=utf-8"}), fname("csv"));
-}
-function exportXLSX(){
-  const rows = outputRows();
-  if (!rows.length){ toast("出力する変更点がありません"); return; }
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "変更反映");
-  XLSX.writeFile(wb, fname("xlsx"));
-}
-function fname(ext){ return `掲載変更_${STATE.hotelName||"ホテル"}_${new Date().toISOString().slice(0,10)}.${ext}`; }
-function downloadBlob(blob, name){
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href=url; a.download=name; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-}
-
-/* ============================================================
-   初期化
-   ============================================================ */
-function init(){
-  loadState();
-  document.getElementById("hotelName").value = STATE.hotelName || "";
-  document.getElementById("salesName").value = STATE.salesName || "";
-  document.getElementById("memoText").value = STATE.memo || "";
-  renderDataFiles();
-  setupDropzone("dzData","fileData",handleDataFiles);
-  setupDropzone("dzMemo","fileMemo",handleMemoFiles);
-  ["hotelName","salesName","memoText"].forEach(id=>{
-    document.getElementById(id).addEventListener("input", ()=>{ clearTimeout(window._sv); window._sv=setTimeout(saveState,400); });
-  });
-  refreshKeyStatus();
-  goStep(STATE.step || 0);
+async function init(){
+  setupDrop();
+  await ensureUsers();
+  const s = sessionStorage.getItem(SS.session);
+  if (s){ try{ CUR=JSON.parse(s); enterApp(); return; }catch(e){} }
 }
 init();
 </script>

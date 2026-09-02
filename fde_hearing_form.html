@@ -276,6 +276,18 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
 #quote-doc .qd-note{border:1px solid #ccc;padding:10px 12px;font-size:12px;white-space:pre-wrap;color:#333}
 #quote-doc .qd-issuer{margin-top:14px;font-size:12px;text-align:right;color:#333;white-space:pre-wrap}
 
+/* ---------- 履歴一覧 ---------- */
+.hist-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;background:#FCFCFD}
+.hist-row.cur{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy);background:#F5F7FB}
+.hist-main{flex:1;min-width:0}
+.hist-co{font-weight:700;color:var(--navy);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.hist-pct{font-family:var(--mono);font-size:13px;color:var(--navy-2);flex:none;min-width:44px;text-align:right}
+.hist-acts{display:flex;gap:6px;flex:none;align-items:center}
+.hist-acts .mbtn{padding:5px 11px;font-size:12px}
+.hist-empty{color:var(--muted);font-size:13px;padding:26px;text-align:center}
+.hist-warn{font-size:12px;color:#B4453A}
+
 @media (max-width:980px){
   nav.toc{display:none}
   header{position:static}
@@ -320,6 +332,8 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
     </div>
     <div class="toolbar">
       <select class="btn sel" id="dom-filter" aria-label="表示する領域"><option value="">全領域を表示</option></select>
+      <button class="btn" id="btn-new">新規</button>
+      <button class="btn" id="btn-hist">履歴</button>
       <button class="btn" id="btn-setup">設定</button>
       <button class="btn" id="btn-load">JSONを読み込む</button>
       <button class="btn" id="btn-tsv">Excelにコピー</button>
@@ -344,7 +358,7 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
   <main id="main"></main>
 </div>
 
-<div class="savebar" id="savebar" title="クリックで閉じます">入力はこの端末のブラウザに<b>自動保存</b>されます。別端末に渡すときは <b>JSONで保存</b> を。</div>
+<div class="savebar" id="savebar" title="クリックで閉じます">入力は<b>自動保存</b>され、<b>履歴</b>に会社ごとに残ります。別端末に渡すときは <b>JSONで保存</b> を。</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <!-- ---------- 設定（会社・テンプレート）モーダル ---------- -->
@@ -464,6 +478,28 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
 
 <!-- 印刷専用：見積書の清書 -->
 <div id="quote-doc"></div>
+
+<!-- ---------- 履歴モーダル ---------- -->
+<div class="modal-bg" id="histmodal" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="hist-title">
+    <div class="modal-head">
+      <h2 id="hist-title">ヒアリング履歴</h2>
+      <p>HEARING HISTORY</p>
+    </div>
+    <div class="modal-body">
+      <div class="q-tools" style="justify-content:space-between;align-items:center">
+        <button class="mbtn primary" id="hist-new" type="button">＋ 新しいヒアリング</button>
+        <span class="sp" id="hist-count"></span>
+      </div>
+      <p class="hintline">この端末に保存された会社ごとのヒアリングです。「開く」で続きから編集、「複製」で似た内容を流用できます。（端末のブラウザに保存されます）</p>
+      <div id="hist-list"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="sp"></span>
+      <button class="mbtn" id="hist-close" type="button">閉じる</button>
+    </div>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -1105,7 +1141,8 @@ function openSetup(){
 }
 function closeSetup(){ setupEl.hidden = true; }
 
-document.getElementById("btn-setup").onclick = openSetup;
+let setupMode = "current";   // "current"=現在の設定変更 / "new"=新規ヒアリング
+document.getElementById("btn-setup").onclick = ()=>{ setupMode="current"; openSetup(); };
 document.getElementById("setup-cancel").onclick = closeSetup;
 document.getElementById("setup-ok").onclick = ()=>{
   const cfg = {
@@ -1115,11 +1152,13 @@ document.getElementById("setup-ok").onclick = ()=>{
     companies: document.getElementById("cfg-companies").value.split("\n").map(s=>s.trim()).filter(Boolean)
   };
   saveConfig(cfg);
+  if(setupMode==="new"){ libState.currentId = newId(); quoteState = null; }
   buildForm(cfg);
   dirty = false;
-  autosave();          // 新しい設定の空フォームを自動保存に反映
+  autosave();          // 新規/変更後の状態を履歴に反映
   closeSetup();
-  toast("ヒアリングシートを設定しました");
+  toast(setupMode==="new" ? "新しいヒアリングを作成しました" : "ヒアリングシートを設定しました");
+  setupMode = "current";
 };
 
 /* 設定の保存（ブラウザに残して次回も同じ会社で開けるように・ベストエフォート） */
@@ -1130,16 +1169,116 @@ function loadConfig(){
   try{ const s = localStorage.getItem(LS_KEY); return s ? JSON.parse(s) : null; }catch(e){ return null; }
 }
 
-/* 入力内容の自動保存（この端末のブラウザに保持・ベストエフォート） */
-const LS_DATA = "ragnize_fde_data_v1";
+/* ============================================================
+   ヒアリング履歴（会社ごとに複数保存・この端末のブラウザに保持）
+   ============================================================ */
+const LS_LIB = "ragnize_fde_library_v1";
+const LS_DATA = "ragnize_fde_data_v1";   // 旧・単一スロット（移行用）
+let libState = {currentId:null, records:{}};
 let saveTimer;
+let histArmDel = null;
+
+function loadLib(){ try{ const s=localStorage.getItem(LS_LIB); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function saveLib(){ try{ localStorage.setItem(LS_LIB, JSON.stringify(libState)); }catch(e){} }
+function loadData(){ try{ const s=localStorage.getItem(LS_DATA); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function newId(){ return "h"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function curMeta(){
+  return {
+    company: val("s1.0.company")||"",
+    dept: val("s1.0.dept")||"",
+    date: val("s1.0.date")||"",
+    pct: (document.getElementById("m-pct")||{}).textContent||"0%"
+  };
+}
+/* 現在編集中のヒアリングを、その履歴レコードに保存 */
 function autosave(){
-  try{ localStorage.setItem(LS_DATA, JSON.stringify(serialize())); }catch(e){}
+  if(!libState.currentId) libState.currentId = newId();
+  const id = libState.currentId, now = new Date().toISOString();
+  const rec = libState.records[id] || {id, savedAt:now};
+  rec.updatedAt = now; rec.meta = curMeta(); rec.data = serialize();
+  libState.records[id] = rec;
+  saveLib();
 }
 function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(autosave,500); }
-function loadData(){
-  try{ const s = localStorage.getItem(LS_DATA); return s ? JSON.parse(s) : null; }catch(e){ return null; }
+
+/* 履歴を1件開く（開く前に現在の編集内容を保存してから切替） */
+function openRecord(id){
+  const rec = libState.records[id]; if(!rec) return;
+  autosave();                 // 現在のレコードを保存
+  libState.currentId = id;
+  histArmDel = null;
+  restore(rec.data);          // フォームを組み直して流し込む
+  saveLib();
+  renderHist();
 }
+function dupRecord(id){
+  const src = libState.records[id]; if(!src) return;
+  const nid = newId(), now = new Date().toISOString();
+  libState.records[nid] = {id:nid, savedAt:now, updatedAt:now,
+    meta:Object.assign({},src.meta), data:JSON.parse(JSON.stringify(src.data))};
+  saveLib(); openRecord(nid); toast("複製しました");
+}
+function delRecord(id){
+  delete libState.records[id];
+  histArmDel = null;
+  if(libState.currentId===id){
+    const rest = Object.values(libState.records).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+    if(rest.length){ libState.currentId = rest[0].id; restore(rest[0].data); }
+    else { libState.currentId = null; saveLib(); renderHist(); startNew(); return; }
+  }
+  saveLib(); renderHist(); toast("削除しました");
+}
+function startNew(){ setupMode = "new"; openSetup(); }
+
+/* ---------- 履歴モーダル ---------- */
+const histEl = document.getElementById("histmodal");
+function openHist(){ histArmDel=null; renderHist(); histEl.hidden=false; }
+function renderHist(){
+  const list = document.getElementById("hist-list");
+  if(!list) return;
+  const recs = Object.values(libState.records)
+    .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  document.getElementById("hist-count").textContent = recs.length+"件";
+  if(!recs.length){
+    list.innerHTML = `<div class="hist-empty">まだ履歴がありません。「＋ 新しいヒアリング」から始めてください。</div>`;
+    return;
+  }
+  list.innerHTML = recs.map(r=>{
+    const m = r.meta||{}, cur = r.id===libState.currentId;
+    const when = (r.updatedAt||"").slice(0,16).replace("T"," ");
+    const acts = r.id===histArmDel
+      ? `<span class="hist-warn">削除しますか？</span>
+         <button class="mbtn" data-hdelyes="${r.id}">はい</button>
+         <button class="mbtn" data-hdelno="1">いいえ</button>`
+      : `<button class="mbtn" data-hopen="${r.id}">開く</button>
+         <button class="mbtn" data-hdup="${r.id}">複製</button>
+         <button class="mbtn" data-hdel="${r.id}">削除</button>`;
+    return `<div class="hist-row${cur?" cur":""}">
+      <div class="hist-main">
+        <div class="hist-co">${esc(m.company||"（会社名 未入力）")}${cur?' <span style="font-size:11px;color:#6B7280;font-weight:400">— 編集中</span>':''}</div>
+        <div class="hist-sub">${esc(m.dept||"部署未入力")}　/　${esc(m.date||"日付未入力")}　/　更新 ${esc(when)}</div>
+      </div>
+      <div class="hist-pct">${esc(m.pct||"0%")}</div>
+      <div class="hist-acts">${acts}</div>
+    </div>`;
+  }).join("");
+}
+document.getElementById("btn-hist").onclick = openHist;
+document.getElementById("btn-new").onclick = startNew;
+document.getElementById("hist-close").onclick = ()=>{ histEl.hidden=true; };
+document.getElementById("hist-new").onclick = ()=>{ histEl.hidden=true; startNew(); };
+document.getElementById("hist-list").addEventListener("click",e=>{
+  const open=e.target.closest("[data-hopen]");
+  if(open){ openRecord(open.dataset.hopen); histEl.hidden=true; toast("履歴を開きました"); return; }
+  const dup=e.target.closest("[data-hdup]");
+  if(dup){ dupRecord(dup.dataset.hdup); return; }
+  const del=e.target.closest("[data-hdel]");
+  if(del){ histArmDel=del.dataset.hdel; renderHist(); return; }
+  const dn=e.target.closest("[data-hdelno]");
+  if(dn){ histArmDel=null; renderHist(); return; }
+  const dy=e.target.closest("[data-hdelyes]");
+  if(dy){ delRecord(dy.dataset.hdelyes); return; }
+});
 
 /* ============================================================
    保存・書き出し
@@ -1294,7 +1433,12 @@ document.getElementById("file-in").onchange = e=>{
   const f = e.target.files[0]; if(!f) return;
   const rd = new FileReader();
   rd.onload = () => {
-    try{ restore(JSON.parse(rd.result)); autosave(); toast("読み込みました"); }
+    try{
+      libState.currentId = newId();     // 読み込んだJSONは新しい履歴として保存
+      restore(JSON.parse(rd.result));
+      autosave();
+      toast("読み込みました（履歴に追加）");
+    }
     catch(err){ toast("読み込めませんでした。このフォームで保存したJSONを選んでください"); }
   };
   rd.readAsText(f); e.target.value = "";
@@ -1532,18 +1676,30 @@ setTimeout(()=>savebar.classList.add("hide"),12000);
    初期化
    ============================================================ */
 (function init(){
-  const savedData = loadData();
-  if(savedData && savedData.config && savedData.config.templateId){
-    restore(savedData);     // 前回の入力内容をそのまま復元（自動保存）
+  const lib = loadLib();
+  if(lib && lib.records && Object.keys(lib.records).length){
+    libState = lib;
+    // currentId が無効なら最新の履歴を開く
+    const recs = Object.values(lib.records).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+    const id = (lib.currentId && lib.records[lib.currentId]) ? lib.currentId : recs[0].id;
+    libState.currentId = id;
+    restore(libState.records[id].data);
     return;
   }
-  const saved = loadConfig();
-  if(saved && saved.templateId){
-    buildForm(saved);       // 前回の会社設定でそのまま開く
-  }else{
-    buildForm({templateId:"generic",orgName:"",subtitle:"",companies:[]}); // 背景に空フォーム
-    openSetup();            // 初回は設定モーダルを出す
+  // 旧・単一スロットからの移行
+  const old = loadData();
+  if(old && old.config && old.config.templateId){
+    libState = {currentId:newId(), records:{}};
+    restore(old); autosave();
+    try{ localStorage.removeItem(LS_DATA); }catch(e){}
+    return;
   }
+  // 初回
+  libState = {currentId:null, records:{}};
+  const saved = loadConfig();
+  buildForm(saved && saved.templateId ? saved : {templateId:"generic",orgName:"",subtitle:"",companies:[]});
+  setupMode = "new";
+  openSetup();
 })();
 </script>
 </body>

@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FDE初回ヒアリングシート</title>
+<style>
+:root{
+  --navy:#16294D;
+  --navy-2:#24406F;
+  --bg:#F3F4F6;
+  --surface:#FFFFFF;
+  --ink:#1F2937;
+  --muted:#6B7280;
+  --line:#E3E6EB;
+  --flag:#B4801F;
+  --flag-bg:#FBF4E6;
+  --radius:6px;
+  --mono:"Consolas","SF Mono","Menlo",monospace;
+  --sans:"Meiryo","メイリオ","Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--navy-2);outline-offset:2px}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:40;
+  background:var(--navy);color:#fff;
+  border-bottom:1px solid var(--navy);
+}
+.head-inner{
+  max-width:1400px;margin:0 auto;padding:14px 24px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.mark{flex:none}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.06em;white-space:nowrap}
+.brand p{margin:0;font-size:11px;color:#A9B7CE;letter-spacing:.14em;font-family:var(--mono)}
+.toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);
+  padding:7px 13px;border-radius:var(--radius);cursor:pointer;
+  font-size:12.5px;letter-spacing:.02em;transition:background .15s,border-color .15s;
+}
+.btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.6)}
+.btn-primary{background:#fff;color:var(--navy);border-color:#fff;font-weight:700}
+.btn-primary:hover{background:#E8EBF1}
+.head-meta{
+  max-width:1400px;margin:0 auto;padding:0 24px 12px;
+  display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#A9B7CE;
+}
+.head-meta b{color:#fff;font-weight:600}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1400px;margin:0 auto;padding:26px 24px 90px;display:flex;gap:28px;align-items:flex-start}
+nav.toc{
+  position:sticky;top:104px;flex:0 0 236px;
+  max-height:calc(100vh - 130px);overflow-y:auto;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:10px 6px;
+}
+nav.toc a{
+  display:flex;gap:9px;align-items:baseline;
+  padding:5px 9px;border-radius:4px;text-decoration:none;color:var(--ink);
+  font-size:12.5px;line-height:1.45;
+}
+nav.toc a:hover{background:var(--bg)}
+nav.toc a.active{background:var(--navy);color:#fff}
+nav.toc a.active .num{color:#A9B7CE}
+nav.toc .num{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;width:16px;text-align:right}
+nav.toc .ttl{flex:1;min-width:0}
+nav.toc .pct{font-family:var(--mono);font-size:10.5px;color:var(--muted);flex:none}
+nav.toc a.active .pct{color:#fff}
+nav.toc a.done .pct{color:#2F7D5A}
+main{flex:1;min-width:0}
+
+/* ---------- section ---------- */
+section.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px 26px 26px;margin-bottom:18px;scroll-margin-top:120px;
+}
+.sec-head{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--navy);padding-bottom:9px;margin-bottom:18px}
+.sec-num{font-family:var(--mono);font-size:12px;color:var(--navy);letter-spacing:.1em;flex:none}
+.sec-head h2{margin:0;font-size:16px;font-weight:700;letter-spacing:.03em;color:var(--navy)}
+.sec-head .hint{margin-left:auto;font-size:11.5px;color:var(--muted);text-align:right}
+.domtag{
+  font-size:11px;color:var(--navy-2);background:#EEF1F6;border:1px solid #DCE2EC;
+  border-radius:20px;padding:2px 10px;letter-spacing:.03em;white-space:nowrap;flex:none;
+}
+.sec-head .domtag + .hint{margin-left:auto}
+.btn.sel{
+  appearance:none;width:auto;max-width:220px;padding-right:26px;
+  background:transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0h10L5 6z' fill='white'/></svg>") no-repeat right 9px center;
+}
+.btn.sel option{color:var(--ink)}
+.filtered-out{display:none!important}
+.blk{margin-bottom:20px}
+.blk:last-child{margin-bottom:0}
+.blk-label{font-size:12.5px;font-weight:700;color:var(--navy-2);margin-bottom:9px;letter-spacing:.04em}
+.note{font-size:12px;color:var(--muted);margin:0 0 10px}
+
+/* ---------- fields ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 16px}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;letter-spacing:.03em}
+input[type=text],input[type=date],input[type=number],select,textarea{
+  width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:4px;
+  background:#FCFCFD;transition:border-color .12s,background .12s;
+}
+input:hover,select:hover,textarea:hover{border-color:#C7CDD6}
+input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--navy-2);outline:none;box-shadow:0 0 0 2px rgba(36,64,111,.12)}
+textarea{resize:vertical;min-height:64px}
+input.filled,select.filled,textarea.filled{background:#fff;border-color:#B9C3D2}
+
+/* ---------- qa ---------- */
+table.qa{width:100%;border-collapse:collapse}
+table.qa th{
+  text-align:left;font-weight:400;font-size:13px;vertical-align:top;
+  width:38%;padding:7px 14px 7px 0;color:var(--ink);border-bottom:1px solid var(--line);
+}
+table.qa td{padding:5px 0;border-bottom:1px solid var(--line);}
+table.qa tr:last-child th,table.qa tr:last-child td{border-bottom:none}
+
+/* ---------- check ---------- */
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 10px}
+.chk{display:flex;align-items:flex-start;gap:7px;padding:4px 7px;border-radius:4px;cursor:pointer;font-size:13px}
+.chk:hover{background:var(--bg)}
+.chk input{margin:4px 0 0;accent-color:var(--navy);flex:none;width:14px;height:14px}
+.chk.on{background:#EEF1F6}
+.chk.on span{font-weight:700;color:var(--navy)}
+
+/* ---------- tables ---------- */
+.tbl-scroll{overflow-x:auto;margin:0 -2px}
+table.dt{width:100%;border-collapse:collapse;min-width:640px}
+table.dt th{
+  font-size:11.5px;font-weight:700;color:var(--navy-2);text-align:left;letter-spacing:.03em;
+  padding:6px 6px;border-bottom:1px solid var(--navy);white-space:nowrap;background:#FAFBFC;
+}
+table.dt td{padding:4px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.dt td input,table.dt td select{padding:6px 7px}
+table.dt .rowlab{font-size:12.5px;white-space:nowrap;padding-right:10px;color:var(--ink)}
+td.calc{font-family:var(--mono);font-size:12.5px;text-align:right;color:var(--navy);white-space:nowrap;padding-right:8px}
+.flagbtn{
+  border:1px solid var(--line);background:#fff;border-radius:4px;cursor:pointer;
+  width:30px;height:30px;line-height:1;color:#C3C9D2;font-size:14px;transition:.12s;
+}
+.flagbtn:hover{border-color:var(--flag);color:var(--flag)}
+.flagbtn.on{background:var(--flag-bg);border-color:var(--flag);color:var(--flag)}
+tr.flagged td{background:var(--flag-bg)}
+.delrow{border:none;background:none;color:#C3C9D2;cursor:pointer;font-size:16px;padding:0 6px;line-height:1}
+.delrow:hover{color:#B4453A}
+.addrow{
+  margin-top:9px;background:#fff;border:1px dashed #B9C3D2;color:var(--navy-2);
+  padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12.5px;
+}
+.addrow:hover{border-color:var(--navy);background:var(--bg)}
+
+/* ---------- score ---------- */
+.score-wrap{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
+.score-list{flex:1;min-width:280px}
+.score-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.score-row .lbl{flex:1;font-size:13px}
+.seg{display:flex;gap:3px;flex:none}
+.seg button{
+  width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:3px;
+  cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--muted);transition:.12s;
+}
+.seg button:hover{border-color:var(--navy-2)}
+.seg button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700}
+.gauge{flex:none;text-align:center;padding-top:4px}
+.gauge .grade{margin-top:6px;font-size:12px;color:var(--muted)}
+.gauge .grade b{font-size:13px;color:var(--navy)}
+
+/* ---------- picks ---------- */
+.picks{background:var(--flag-bg);border:1px solid #EBD9B4;border-radius:var(--radius);padding:14px 16px}
+.picks h3{margin:0 0 8px;font-size:12.5px;color:var(--flag);letter-spacing:.05em}
+.picks ol{margin:0;padding-left:20px}
+.picks li{font-size:13px;margin-bottom:3px}
+.picks .empty{font-size:12.5px;color:var(--muted);margin:0}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(14px);
+  background:var(--navy);color:#fff;padding:10px 20px;border-radius:var(--radius);
+  font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.savebar{
+  position:fixed;right:20px;bottom:20px;z-index:50;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:8px 14px;font-size:12px;color:var(--muted);box-shadow:0 2px 10px rgba(22,41,77,.10);
+  transition:opacity .3s;
+}
+.savebar:hover{border-color:#B9C3D2}
+.savebar b{color:var(--navy)}
+.savebar.hide{opacity:0;pointer-events:none}
+
+/* ---------- setup modal ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(22,41,77,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:34px 18px;overflow:auto}
+.modal-bg[hidden]{display:none}
+.modal{background:var(--surface);border-radius:8px;width:100%;max-width:600px;box-shadow:0 12px 40px rgba(22,41,77,.28);overflow:hidden}
+.modal-head{background:var(--navy);color:#fff;padding:18px 24px}
+.modal-head h2{margin:0;font-size:16px;letter-spacing:.04em}
+.modal-head p{margin:4px 0 0;font-size:12px;color:#A9B7CE;letter-spacing:.06em;font-family:var(--mono)}
+.modal-body{padding:20px 24px 8px}
+.modal-body .fg{margin-bottom:16px}
+.modal-body label.lb{display:block;font-size:12px;font-weight:700;color:var(--navy-2);margin-bottom:6px;letter-spacing:.03em}
+.modal-body .hintline{font-size:11.5px;color:var(--muted);margin:0 0 8px}
+.tpl-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tpl-opt{border:1px solid var(--line);border-radius:6px;padding:12px 13px;cursor:pointer;transition:.12s;background:#FCFCFD}
+.tpl-opt:hover{border-color:#B9C3D2}
+.tpl-opt.on{border-color:var(--navy);background:#EEF1F6;box-shadow:0 0 0 1px var(--navy)}
+.tpl-opt b{display:block;font-size:13px;color:var(--navy);margin-bottom:3px}
+.tpl-opt span{font-size:11.5px;color:var(--muted);line-height:1.5}
+.modal-body input[type=text],.modal-body textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:#FCFCFD}
+.modal-body textarea{min-height:120px;resize:vertical;font-size:13px;line-height:1.6}
+.modal-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 24px 20px;flex-wrap:wrap}
+.modal-foot .sp{font-size:11.5px;color:var(--muted)}
+.mbtn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 18px;border-radius:6px;cursor:pointer;font-size:13px}
+.mbtn:hover{border-color:#B9C3D2}
+.mbtn.primary{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700}
+.mbtn.primary:hover{background:var(--navy-2)}
+@media (max-width:520px){.tpl-opts{grid-template-columns:1fr}}
+
+@media (max-width:980px){
+  nav.toc{display:none}
+  header{position:static}
+  .head-inner{padding:12px 14px;gap:12px}
+  .brand h1{font-size:13.5px;white-space:normal}
+  .head-meta{padding:0 14px 10px;gap:12px;font-size:11.5px}
+  section.card{scroll-margin-top:12px}
+  .wrap{padding:16px 12px 80px}
+  section.card{padding:18px 16px 20px}
+  table.qa th{width:auto;display:block;padding:6px 0 0;border:none;font-size:12.5px;color:var(--muted)}
+  table.qa td{display:block;padding:0 0 8px;border-bottom:1px solid var(--line)}
+  .savebar{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  header,nav.toc,.toolbar,.savebar,#toast,.addrow,.delrow,.flagbtn,.modal-bg{display:none!important}
+  body{background:#fff;font-size:11px}
+  .wrap{display:block;padding:0}
+  section.card{border:none;border-bottom:1px solid #999;border-radius:0;padding:10px 0;page-break-inside:avoid}
+  input,select,textarea{border:none;border-bottom:1px solid #ccc;background:#fff}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <svg class="mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <circle cx="15" cy="15" r="13.5" fill="none" stroke="#A9B7CE" stroke-width="1"/>
+        <circle cx="15" cy="15" r="8.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+        <circle cx="15" cy="15" r="2.6" fill="#fff"/>
+        <line x1="15" y1="15" x2="22.5" y2="8.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1 id="brand-title">FDE初回ヒアリングシート</h1>
+        <p id="brand-sub">RAGNIZE &nbsp;/&nbsp; FIELD DEPLOYED ENGINEER</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <select class="btn sel" id="dom-filter" aria-label="表示する領域"><option value="">全領域を表示</option></select>
+      <button class="btn" id="btn-setup">設定</button>
+      <button class="btn" id="btn-load">JSONを読み込む</button>
+      <button class="btn" id="btn-tsv">Excelにコピー</button>
+      <button class="btn" id="btn-csv">CSVをダウンロード</button>
+      <button class="btn" id="btn-print">印刷</button>
+      <button class="btn btn-primary" id="btn-save">JSONで保存</button>
+      <input type="file" id="file-in" accept=".json" hidden>
+    </div>
+  </div>
+  <div class="head-meta">
+    <span>対象会社 <b id="m-company">未入力</b></span>
+    <span>部署・拠点 <b id="m-dept">未入力</b></span>
+    <span>ヒアリング日 <b id="m-date">未入力</b></span>
+    <span>記入率 <b id="m-pct">0%</b></span>
+    <span>深掘り候補 <b id="m-flag">0件</b></span>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="章の一覧"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="savebar" id="savebar" title="クリックで閉じます">入力はブラウザに保存されません。終了前に <b>JSONで保存</b> を。</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- ---------- 設定（会社・テンプレート）モーダル ---------- -->
+<div class="modal-bg" id="setup" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+    <div class="modal-head">
+      <h2 id="setup-title">ヒアリングシートの設定</h2>
+      <p>COMPANY / TEMPLATE SETUP</p>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <label class="lb">テンプレート（業種）</label>
+        <p class="hintline">ヒアリングする業種に近いものを選びます。後から設定でいつでも切り替えられます。</p>
+        <div class="tpl-opts" id="tpl-opts"></div>
+      </div>
+      <div class="fg">
+        <label class="lb" for="cfg-org">グループ／会社名（見出しに表示）</label>
+        <input type="text" id="cfg-org" placeholder="例）○○グループ ／ 株式会社○○">
+      </div>
+      <div class="fg">
+        <label class="lb" for="cfg-sub">サブタイトル（英字ロゴ行）</label>
+        <input type="text" id="cfg-sub" placeholder="例）RAGNIZE / FIELD DEPLOYED ENGINEER">
+      </div>
+      <div class="fg">
+        <label class="lb" for="cfg-companies">対象会社の一覧（1行に1社）</label>
+        <p class="hintline">基本情報の「対象会社」プルダウンになります。1社だけ・空欄でもOK（空欄なら自由入力になります）。</p>
+        <textarea id="cfg-companies" placeholder="株式会社○○&#10;○○販売株式会社&#10;○○サービス株式会社"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="sp" id="setup-warn"></span>
+      <span style="display:flex;gap:10px">
+        <button class="mbtn" id="setup-cancel" type="button">キャンセル</button>
+        <button class="mbtn primary" id="setup-ok" type="button">この内容で開始</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   テンプレート定義
+   ------------------------------------------------------------
+   1つのアプリで複数業種のヒアリングに対応するため、会社リスト・
+   領域タグ・章立て（スキーマ）を「テンプレート」としてまとめる。
+   generic = どの会社でも使える汎用版
+   automotive = ロードカーグループ（自動車ディーラー）専用版
+   ============================================================ */
+
+/* ---------- 汎用テンプレート ---------- */
+const GENERIC_DOMAINS = ["① 営業・販売","② 顧客対応","③ 受発注・調達","④ 現場・製造","⑤ バックオフィス","⑥ 情報システム","⑦ 拠点・グループ連携"];
+const GENERIC_DOMAIN_OF = {
+  "顧客対応・問い合わせ":"② 顧客対応",
+  "電話・問い合わせ業務":"② 顧客対応",
+  "顧客フォロー・架電":"② 顧客対応",
+  "営業・商談・追客":"① 営業・販売",
+  "受発注・見積・請求":"③ 受発注・調達",
+  "現場・製造・サービス提供":"④ 現場・製造",
+  "メール・文書作成":"⑤ バックオフィス",
+  "Excel・データ入力・集計":"⑤ バックオフィス",
+  "経理・総務・人事":"⑤ バックオフィス",
+  "使用システム一覧":"⑥ 情報システム",
+  "社内資料・ナレッジ":"⑥ 情報システム",
+  "属人化チェック":"⑤ バックオフィス",
+  "拠点・グループ間の連携":"⑦ 拠点・グループ連携"
+};
+
+const GENERIC_SCHEMA = [
+{t:"ヒアリング基本情報",blocks:[
+  {type:"fields",items:[
+    {k:"company",label:"対象会社",input:"select",opts:[]},
+    {k:"dept",label:"部署・拠点"},
+    {k:"person",label:"ヒアリング対象者"},
+    {k:"title",label:"役職"},
+    {k:"headcount",label:"部署人数",input:"number"},
+    {k:"date",label:"ヒアリング日",input:"date"},
+    {k:"fde",label:"FDE担当"}
+  ]}
+]},
+
+{t:"会社・部署の役割",blocks:[
+  {type:"qa",items:["この部署の役割は何ですか？","主な顧客・取引先は誰ですか？","他部署との連携はありますか？","拠点・グループ会社との連携はありますか？","繁忙期・繁忙時間帯はありますか？","人手不足を感じる時間帯・業務はありますか？"]}
+]},
+
+{t:"業務領域確認",hint:"該当する業務にチェック",blocks:[
+  {type:"check",label:"① 営業・販売",items:["新規開拓","見込み客対応","商談","見積作成","受注・契約","提案資料作成","追客・フォロー"]},
+  {type:"check",label:"② 顧客対応",items:["電話受付","問い合わせ対応","予約・受付管理","クレーム対応","メール・SMS案内","顧客フォロー架電"]},
+  {type:"check",label:"③ 受発注・調達",items:["受注処理","発注・仕入","在庫管理","納期管理","請求・入金確認","仕入先対応"]},
+  {type:"check",label:"④ 現場・製造・サービス",items:["現場作業","製造・加工","施工・点検","品質チェック","進捗管理","配送・物流"]},
+  {type:"check",label:"⑤ バックオフィス",items:["経理","総務","人事・採用","給与・労務","データ集計・レポート","広告・販促"]},
+  {type:"check",label:"⑥ 情報システム",items:["社内IT対応","システム運用","データ管理","セキュリティ","ヘルプデスク"]},
+  {type:"check",label:"⑦ 拠点・グループ連携",items:["拠点間の情報共有","顧客・案件の連携","データ共有","共通システム運用","合同施策"],other:true}
+]},
+
+{t:"日常業務棚卸し",hint:"★を押すと深掘り候補に入ります",blocks:[
+  {type:"table",id:"tasks",flag:true,flagLabel:"業務棚卸し",rows:5,cols:[
+    {k:"name",label:"業務名",w:"16%"},
+    {k:"detail",label:"内容",w:"24%"},
+    {k:"freq",label:"頻度",w:"10%"},
+    {k:"count",label:"月間件数",type:"number",w:"9%"},
+    {k:"min",label:"1件あたり時間(分)",type:"number",w:"11%"},
+    {k:"hours",label:"月間時間",calc:"hours"},
+    {k:"people",label:"担当人数",type:"number",w:"8%"},
+    {k:"tool",label:"使用ツール",w:"14%"}
+  ]}
+]},
+
+{t:"現在困っている業務",blocks:[
+  {type:"check",items:["電話対応が多い","折り返し電話が多い","架電業務が多い","メール作成が多い","同じ問い合わせが多い","Excel入力が多い","転記作業が多い","紙業務が多い","見積作成に時間がかかる","顧客への案内に時間がかかる","担当者によって対応が異なる","特定の人しかできない業務がある","ベテランへの質問が多い","ミスが起こりやすい","確認・チェック作業が多い","月末・月初に業務が集中する","人手不足","お客様を待たせている","システム間の二重入力がある","情報を探すのに時間がかかる"],other:true}
+]},
+
+{t:"「なくしたい仕事」TOP3",hint:"明日からやらなくてよくなるなら？",blocks:[
+  {type:"table",id:"drop",flag:true,flagLabel:"なくしたい仕事",rows:3,fixed:true,labels:["1位","2位","3位"],cols:[
+    {k:"task",label:"業務",w:"30%"},
+    {k:"reason",label:"理由",w:"42%"},
+    {k:"hours",label:"月間時間",type:"number",w:"14%"}
+  ]}
+]},
+
+{t:"顧客対応・問い合わせ",blocks:[
+  {type:"qa",items:["1日の受電件数","1日の架電件数","主な問い合わせ内容","営業電話の割合","担当者への取次件数","折り返し対応件数","営業時間外の問い合わせ件数","よくある質問","対応内容を記録していますか？","対応後に別システムへの入力がありますか？"]},
+  {type:"check",label:"AIで一次対応できそうな内容",items:["営業電話の判別","会社・拠点案内","営業時間案内","予約受付","見積・料金問い合わせ","在庫・納期問い合わせ","申込・受付","よくある質問回答","担当者取次","折り返し受付"],other:true}
+]},
+
+{t:"営業・商談・追客",blocks:[
+  {type:"qa",label:"集客・問い合わせ",items:["新規見込み客はどこから来ますか？（流入経路）","問い合わせは月何件ありますか？","問い合わせ後、何分・何時間以内に対応していますか？","担当者への振り分け方法","営業時間外の問い合わせ対応"]},
+  {type:"qa",label:"商談・提案",items:["商談準備にどのくらい時間がかかりますか？","見積・提案書の作成にかかる時間","よく聞かれる質問","提案資料は使い回していますか？","商談内容の記録方法"]},
+  {type:"qa",label:"追客",items:["商談後の電話・メールの頻度","担当者ごとに追客方法が違いますか？","未成約客の管理方法","長期検討客をどのように管理していますか？","追客漏れは発生していませんか？"]}
+]},
+
+{t:"受発注・見積・請求",blocks:[
+  {type:"qa",items:["受注の受付方法","発注・仕入の流れ","見積作成方法","在庫・納期の確認方法","請求・入金確認の方法","同じ情報を複数システムに入力していますか？","仕入先とのやり取り方法","ミスが起きやすい工程はどこですか？"]}
+]},
+
+{t:"現場・製造・サービス提供",blocks:[
+  {type:"qa",items:["現場・作業の受付方法","予約・スケジュール管理方法","進捗管理方法","顧客への進捗連絡方法","完了連絡方法","写真・画像の管理方法","部材・部品の確認・発注方法","再対応・次回案内の方法"]}
+]},
+
+{t:"メール・文書作成",blocks:[
+  {type:"qa",items:["よく作成するメール","定型メール","案内メール","お詫びメール","見積書","報告書","社内申請","顧客説明文","月間作成件数","月間作業時間"]}
+]},
+
+{t:"Excel・データ入力・集計",blocks:[
+  {type:"qa",items:["Excelで管理している業務","CSVを使用する業務","コピー＆ペーストが多い業務","同じ情報を複数回入力する業務","毎日作成する集計","毎週作成する集計","毎月作成する集計","経営・上司への報告資料"]}
+]},
+
+{t:"使用システム一覧",blocks:[
+  {type:"table",id:"systems",rows:4,cols:[
+    {k:"name",label:"システム・サービス名",w:"22%"},
+    {k:"use",label:"用途",w:"22%"},
+    {k:"dept",label:"利用部署",w:"16%"},
+    {k:"csv",label:"CSV出力",type:"select",opts:["可","不可","不明"],w:"11%"},
+    {k:"api",label:"API",type:"select",opts:["有","無","不明"],w:"10%"},
+    {k:"issue",label:"課題",w:"19%"}
+  ]},
+  {type:"check",label:"特に確認するもの（確認できたらチェック）",items:["基幹システム","販売管理","在庫管理","顧客管理（CRM／SFA）","会計システム","勤怠・給与","Excel","Google Workspace","Microsoft 365","Teams","LINE","電話システム","Web問い合わせフォーム","チャットツール"]}
+]},
+
+{t:"社内資料・ナレッジ",blocks:[
+  {type:"table",id:"docs",fixed:true,
+   labels:["業務マニュアル","電話応対マニュアル","FAQ","営業資料","商品・サービス資料","チェックリスト","作業手順書","社内規程","メールテンプレート","過去問い合わせ","申請様式"],
+   firstLabel:"資料",
+   cols:[
+     {k:"exists",label:"有無",type:"select",opts:["有","無","一部"],w:"12%"},
+     {k:"place",label:"保存場所",w:"26%"},
+     {k:"owner",label:"更新担当",w:"18%"},
+     {k:"ai",label:"AI利用候補",type:"select",opts:["◎","○","△","×"],w:"12%"}
+   ]}
+]},
+
+{t:"属人化チェック",blocks:[
+  {type:"check",items:["特定の人しかできない","担当者が休むと仕事が止まる","マニュアルがない","引き継ぎに時間がかかる","判断基準が明文化されていない","担当者によって回答が違う","ベテラン社員への質問が多い","過去メールを探して回答している","個人PC・個人Excelで管理している"]}
+]},
+
+{t:"拠点・グループ間の連携",hint:"複数拠点・グループ会社がある場合",blocks:[
+  {type:"qa",items:["他の拠点・グループ会社と共有している業務","他社・他拠点から受け取るデータ","他社・他拠点へ渡すデータ","電話・メールで確認している内容","同じデータを別々に管理しているか","共通化できそうな業務","共通マニュアルはあるか","共通システムはあるか"]}
+]},
+
+{t:"AI・自動化候補",hint:"ヒアリング中にFDEが記入",blocks:[
+  {type:"table",id:"ai",flag:true,flagLabel:"AI候補",rows:3,cols:[
+    {k:"task",label:"業務",w:"16%"},
+    {k:"now",label:"現状",w:"20%"},
+    {k:"plan",label:"改善案",w:"20%"},
+    {k:"how",label:"AI・自動化方法",type:"select",w:"14%",opts:["AIエージェント","音声AI","RAG","メール自動生成","Excel自動化","RPA","システム連携","ダッシュボード","OCR","画像AI","その他"]},
+    {k:"effect",label:"想定効果",w:"20%"}
+  ]}
+]},
+
+{t:"優先順位評価",hint:"最有力候補の業務を1つ選んで採点",blocks:[
+  {type:"fields",items:[{k:"target",label:"評価対象の業務"}]},
+  {type:"score",items:["業務時間が多い","件数が多い","人手不足への影響","定型化しやすい","属人化している","ミス削減効果","顧客満足への影響","AI化しやすい","他部署へ展開できる","他社へ横展開できる"]}
+]},
+
+{t:"現状KPI",hint:"AI導入前の数値を取得する",blocks:[
+  {type:"table",id:"kpi",fixed:true,firstLabel:"KPI",
+   labels:["月間処理件数","月間作業時間","1件あたり時間","担当人数","受電件数","架電件数","メール件数","問い合わせ件数","商談件数","受注率","ミス件数","顧客待ち時間"],
+   cols:[{k:"now",label:"現状",w:"36%"},{k:"memo",label:"補足・測定方法",w:"44%"}]}
+]},
+
+{t:"現場からの希望",blocks:[
+  {type:"textarea",k:"wish",label:"AIやシステムで「こんなことができたら助かる」ということはありますか？",rows:5}
+]},
+
+{t:"FDE総括",blocks:[
+  {type:"picks"},
+  {type:"triple",groups:[
+    {k:"issue",label:"現状の主要課題"},
+    {k:"priority",label:"優先して改善すべき業務"},
+    {k:"agent",label:"AIエージェント候補"},
+    {k:"quick",label:"すぐ実行できる改善"},
+    {k:"deep",label:"詳細ヒアリング対象"}
+  ]},
+  {type:"check",label:"必要資料",items:["業務マニュアル","Excel管理表","FAQ","電話応対マニュアル","メールテンプレート","システム画面","月次集計","問い合わせ履歴","受注・売上データ","スケジュール表"],other:true}
+]},
+
+{t:"全体集計用",hint:"業務棚卸しの入力から自動生成",blocks:[
+  {type:"agg"}
+]}
+];
+
+/* ---------- 自動車ディーラー（ロードカーグループ）テンプレート ---------- */
+const AUTO_COMPANIES = ["株式会社ロードカー","株式会社We Car CORE","株式会社ユーポス","NUシステムズ株式会社","株式会社レイクウインド","株式会社ARTS","株式会社東京ユーポス"];
+
+const AUTO_DOMAINS = ["① ボルボ新車販売","② 中古車・買取","③ 整備・板金","④ 保険","⑤ 顧客対応","⑥ 本部業務","⑦ グループ連携"];
+const AUTO_DOMAIN_OF = {
+  "ボルボ新車販売：集客・商談・追客":"① ボルボ新車販売",
+  "ボルボ新車販売：契約〜納車・納車後":"① ボルボ新車販売",
+  "新車販売の顧客導線マップ":"① ボルボ新車販売",
+  "中古車・買取・査定":"② 中古車・買取",
+  "整備・車検・板金業務":"③ 整備・板金",
+  "保険業務":"④ 保険",
+  "電話・問い合わせ業務":"⑤ 顧客対応",
+  "顧客フォロー・架電":"⑤ 顧客対応",
+  "メール・文書作成":"⑤ 顧客対応",
+  "Excel・データ入力・集計":"⑥ 本部業務",
+  "使用システム一覧":"⑥ 本部業務",
+  "社内資料・ナレッジ":"⑥ 本部業務",
+  "属人化チェック":"⑥ 本部業務",
+  "グループ会社間の連携":"⑦ グループ連携",
+  "グループ内の車両・顧客ライフサイクル":"⑦ グループ連携",
+  "グループ横展開可能性":"⑦ グループ連携"
+};
+
+const AUTO_SCHEMA = [
+{t:"ヒアリング基本情報",blocks:[
+  {type:"fields",items:[
+    {k:"company",label:"対象会社",input:"select",opts:[]},
+    {k:"dept",label:"部署・拠点"},
+    {k:"person",label:"ヒアリング対象者"},
+    {k:"title",label:"役職"},
+    {k:"headcount",label:"部署人数",input:"number"},
+    {k:"date",label:"ヒアリング日",input:"date"},
+    {k:"fde",label:"FDE担当"}
+  ]}
+]},
+
+{t:"会社・部署の役割",blocks:[
+  {type:"qa",items:["この部署の役割は何ですか？","主な顧客・取引先は誰ですか？","他部署との連携はありますか？","グループ会社との連携はありますか？","繁忙期・繁忙時間帯はありますか？","人手不足を感じる時間帯・業務はありますか？"]}
+]},
+
+{t:"業務領域確認",hint:"7領域で該当業務にチェック",blocks:[
+  {type:"check",label:"① ボルボ新車販売",items:["Web問い合わせ対応","来店受付","商談","試乗予約","見積作成","注文・契約","納期案内","登録手続き","納車","メーカー(Volvo Cars)対応"]},
+  {type:"check",label:"② 中古車・買取・査定",items:["中古車販売","車両買取","査定","下取り","仕入・オークション","在庫管理","FC・加盟店対応"]},
+  {type:"check",label:"③ 整備・車検・板金",items:["車検","一般整備","法定点検","板金・塗装","部品発注","入庫予約"]},
+  {type:"check",label:"④ 保険",items:["自賠責","任意保険提案","保険見積","契約手続き","継続・更新","事故対応"]},
+  {type:"check",label:"⑤ 顧客対応",items:["電話受付","問い合わせ対応","顧客フォロー架電","予約管理","クレーム対応","メール・SMS案内"]},
+  {type:"check",label:"⑥ 本部業務",items:["経営・本部","経理","総務","人事・採用","IT・システム","データ集計・レポート","広告・販促"]},
+  {type:"check",label:"⑦ グループ会社間連携",items:["車両の融通","顧客紹介","データ共有","共通システム運用","合同施策"],other:true}
+]},
+
+{t:"日常業務棚卸し",hint:"★を押すと深掘り候補に入ります",blocks:[
+  {type:"table",id:"tasks",flag:true,flagLabel:"業務棚卸し",rows:5,cols:[
+    {k:"name",label:"業務名",w:"16%"},
+    {k:"detail",label:"内容",w:"24%"},
+    {k:"freq",label:"頻度",w:"10%"},
+    {k:"count",label:"月間件数",type:"number",w:"9%"},
+    {k:"min",label:"1件あたり時間(分)",type:"number",w:"11%"},
+    {k:"hours",label:"月間時間",calc:"hours"},
+    {k:"people",label:"担当人数",type:"number",w:"8%"},
+    {k:"tool",label:"使用ツール",w:"14%"}
+  ]}
+]},
+
+{t:"現在困っている業務",blocks:[
+  {type:"check",items:["電話対応が多い","折り返し電話が多い","架電業務が多い","メール作成が多い","同じ問い合わせが多い","Excel入力が多い","転記作業が多い","紙業務が多い","見積作成に時間がかかる","顧客への案内に時間がかかる","担当者によって対応が異なる","特定の人しかできない業務がある","ベテランへの質問が多い","ミスが起こりやすい","確認・チェック作業が多い","月末・月初に業務が集中する","人手不足","お客様を待たせている","システム間の二重入力がある","情報を探すのに時間がかかる"],other:true}
+]},
+
+{t:"「なくしたい仕事」TOP3",hint:"明日からやらなくてよくなるなら？",blocks:[
+  {type:"table",id:"drop",flag:true,flagLabel:"なくしたい仕事",rows:3,fixed:true,labels:["1位","2位","3位"],cols:[
+    {k:"task",label:"業務",w:"30%"},
+    {k:"reason",label:"理由",w:"42%"},
+    {k:"hours",label:"月間時間",type:"number",w:"14%"}
+  ]}
+]},
+
+{t:"ボルボ新車販売：集客・商談・追客",blocks:[
+  {type:"qa",label:"集客・問い合わせ",items:["新規見込み客はどこから来ますか？（流入経路）","Web問い合わせは月何件ありますか？","問い合わせ後、何分・何時間以内に対応していますか？","担当営業への振り分け方法","営業時間外の問い合わせ対応"]},
+  {type:"qa",label:"商談",items:["来店前にどのような情報を確認していますか？","商談準備にどのくらい時間がかかりますか？","見積作成にかかる時間","車種・グレード・オプションでよく聞かれる質問","試乗予約の管理方法"]},
+  {type:"qa",label:"追客",items:["商談後の電話・メールの頻度","営業担当者ごとに追客方法が違いますか？","未成約客の管理方法","長期検討客をどのように管理していますか？","追客漏れは発生していませんか？"]}
+]},
+
+{t:"ボルボ新車販売：契約〜納車・納車後",blocks:[
+  {type:"qa",label:"契約〜納車",items:["契約後に入力するシステムはいくつありますか？","同じ顧客情報を何回入力しますか？","必要書類の案内方法","納期確認・納期連絡の方法","納車日程の調整方法","納車前チェックの方法"]},
+  {type:"qa",label:"納車後フォロー",items:["お礼メール","初回点検案内","定期点検案内","車検案内","保険更新案内","乗り換え時期のアプローチ"]},
+  {type:"qa",label:"メーカー対応",items:["Volvo Cars関連システムへ入力している内容","メーカーへの報告業務","キャンペーン対応","メーカー指定の顧客フォロー"]}
+]},
+
+{t:"新車販売の顧客導線マップ",hint:"★を押すと深掘り候補に入ります",blocks:[
+  {type:"note",text:"商談そのものをAIに置き換えるのではなく、営業担当者が接客・提案に集中できる状態をつくるための棚卸しです。導線の各ステップで、誰が・どれだけ時間を使っているかを押さえます。"},
+  {type:"table",id:"flow",flag:true,flagLabel:"新車販売の顧客導線",fixed:true,firstLabel:"ステップ",
+   labels:["Web・電話問い合わせ","一次対応・振り分け","来店予約・試乗予約","商談準備","商談・見積","商談後メール","追客（未成約客）","契約・注文","納期案内・書類","納車","納車後フォロー（点検・保険更新）"],
+   cols:[
+     {k:"now",label:"現状のやり方",w:"26%"},
+     {k:"count",label:"月間件数",type:"number",w:"9%"},
+     {k:"min",label:"1件あたり時間(分)",type:"number",w:"11%"},
+     {k:"hours",label:"月間時間",calc:"hours"},
+     {k:"who",label:"担当",w:"14%"},
+     {k:"ai",label:"AI候補",type:"select",opts:["◎","○","△","×"],w:"9%"}
+   ]}
+]},
+
+{t:"電話・問い合わせ業務",blocks:[
+  {type:"qa",items:["1日の受電件数","1日の架電件数","主な電話内容","営業電話の割合","担当者への取次件数","折り返し対応件数","営業時間外の問い合わせ件数","よくある質問","電話内容を記録していますか？","電話後に別システムへの入力がありますか？"]},
+  {type:"check",label:"AIで一次対応できそうな内容",items:["営業電話の判別","店舗案内","営業時間案内","車検・整備予約","査定受付","買取問い合わせ","保険問い合わせ","保険更新案内","点検案内","来店予約","担当者取次"],other:true}
+]},
+
+{t:"顧客フォロー・架電",blocks:[
+  {type:"qa",items:["定期的に架電している業務","架電対象件数","架電タイミング","不在率","再架電回数","架電後の記録方法","案内メール・SMSの有無"]},
+  {type:"check",label:"対象候補",items:["保険更新","車検","点検","査定後フォロー","買取見込み客","中古車見込み客","来店予約","契約後フォロー"],other:true}
+]},
+
+{t:"中古車・買取・査定",blocks:[
+  {type:"qa",items:["新規問い合わせの受付方法","問い合わせ後の初回対応時間","見込み客管理方法","追客方法","見積作成方法","査定情報の入力方法","顧客情報の二重入力はありますか？","成約・失注理由を記録していますか？","過去顧客への再アプローチ方法"]},
+  {type:"qa",label:"下取り・グループ連携",items:["新車商談での下取り査定の流れ","ユーポス等グループ会社との査定連携方法","査定情報の共有方法（システム／メール／電話）","下取り車の流通先の決め方","下取り価格の判断は誰がしますか？"]}
+]},
+
+{t:"整備・車検・板金業務",blocks:[
+  {type:"qa",items:["入庫受付方法","予約方法","見積方法","進捗管理方法","顧客への進捗連絡方法","完了連絡方法","保険会社とのやり取り","写真・画像管理方法","部品確認・発注方法","再入庫・次回点検案内"]}
+]},
+
+{t:"保険業務",blocks:[
+  {type:"qa",items:["自賠責手続き件数","任意保険見積件数","新規契約件数","継続対象件数","継続架電件数","不在時の対応","更新案内メール","保険会社システムへの入力","店舗との情報連携","Excel等の管理表","手入力・転記作業"]}
+]},
+
+{t:"メール・文書作成",blocks:[
+  {type:"qa",items:["よく作成するメール","定型メール","案内メール","お詫びメール","見積書","報告書","社内申請","顧客説明文","月間作成件数","月間作業時間"]}
+]},
+
+{t:"Excel・データ入力・集計",blocks:[
+  {type:"qa",items:["Excelで管理している業務","CSVを使用する業務","コピー＆ペーストが多い業務","同じ情報を複数回入力する業務","毎日作成する集計","毎週作成する集計","毎月作成する集計","経営・上司への報告資料"]}
+]},
+
+{t:"使用システム一覧",blocks:[
+  {type:"table",id:"systems",rows:4,cols:[
+    {k:"name",label:"システム・サービス名",w:"22%"},
+    {k:"use",label:"用途",w:"22%"},
+    {k:"dept",label:"利用部署",w:"16%"},
+    {k:"csv",label:"CSV出力",type:"select",opts:["可","不可","不明"],w:"11%"},
+    {k:"api",label:"API",type:"select",opts:["有","無","不明"],w:"10%"},
+    {k:"issue",label:"課題",w:"19%"}
+  ]},
+  {type:"check",label:"特に確認するもの（確認できたらチェック）",items:["基幹システム","Volvo Cars関連システム","DMS（ディーラー管理）","CRM／SFA","顧客管理","車両管理","試乗予約システム","査定システム","保険システム","整備システム","会計システム","Excel","Google Workspace","Microsoft 365","Teams","LINE","電話システム","Web問い合わせフォーム"]}
+]},
+
+{t:"社内資料・ナレッジ",blocks:[
+  {type:"table",id:"docs",fixed:true,
+   labels:["業務マニュアル","電話応対マニュアル","FAQ","営業資料","車種・グレード資料","納車チェックリスト","試乗手順","保険資料","整備マニュアル","査定基準","メールテンプレート","過去問い合わせ","社内規程"],
+   firstLabel:"資料",
+   cols:[
+     {k:"exists",label:"有無",type:"select",opts:["有","無","一部"],w:"12%"},
+     {k:"place",label:"保存場所",w:"26%"},
+     {k:"owner",label:"更新担当",w:"18%"},
+     {k:"ai",label:"AI利用候補",type:"select",opts:["◎","○","△","×"],w:"12%"}
+   ]}
+]},
+
+{t:"属人化チェック",blocks:[
+  {type:"check",items:["特定の人しかできない","担当者が休むと仕事が止まる","マニュアルがない","引き継ぎに時間がかかる","判断基準が明文化されていない","担当者によって回答が違う","ベテラン社員への質問が多い","過去メールを探して回答している","個人PC・個人Excelで管理している"]}
+]},
+
+{t:"グループ会社間の連携",hint:"グループ案件の重点項目",blocks:[
+  {type:"qa",items:["他のグループ会社と共有している業務","他社から受け取るデータ","他社へ渡すデータ","電話・メールで確認している内容","同じデータを別々に管理しているか","共通化できそうな業務","共通マニュアルはあるか","共通システムはあるか"]}
+]},
+
+{t:"グループ内の車両・顧客ライフサイクル",hint:"★を押すと深掘り候補に入ります",blocks:[
+  {type:"note",text:"1台の車と1人の顧客が、グループ内をどう回っているかを追います。ここが埋まると、1社単位ではなくライフサイクル単位でAI化の効き所を見つけられます。"},
+  {type:"table",id:"lifecycle",flag:true,flagLabel:"グループライフサイクル",fixed:true,firstLabel:"段階",
+   labels:["新車販売（ロードカー／ボルボ）","下取り車の査定","買取・流通（ユーポス／東京ユーポス）","保険（新規・継続）","整備・車検・板金","次回乗り換え提案"],
+   cols:[
+     {k:"who",label:"担当会社・部署",w:"18%"},
+     {k:"data",label:"次へ渡す情報",w:"22%"},
+     {k:"how",label:"連携方法",type:"select",opts:["システム連携","CSV","メール","電話","紙","なし"],w:"12%"},
+     {k:"issue",label:"課題・断絶している点",w:"24%"}
+   ]}
+]},
+
+{t:"グループ横展開可能性",hint:"FDE記入欄／重点項目",blocks:[
+  {type:"table",id:"spread",fixed:true,firstLabel:"業務",
+   labels:["電話受付","顧客問い合わせ","架電","メール","見積","顧客フォロー","見込み客追客","納車後フォロー","下取り・査定連携","保険継続","社内問い合わせ","集計・報告"],
+   cols:[
+     {k:"target",label:"対象会社",w:"34%"},
+     {k:"level",label:"共通化可能性",type:"select",opts:["高","中","低"],w:"14%"},
+     {k:"ai",label:"AI化候補",w:"34%"}
+   ]}
+]},
+
+{t:"AI・自動化候補",hint:"ヒアリング中にFDEが記入",blocks:[
+  {type:"table",id:"ai",flag:true,flagLabel:"AI候補",rows:3,cols:[
+    {k:"task",label:"業務",w:"16%"},
+    {k:"now",label:"現状",w:"20%"},
+    {k:"plan",label:"改善案",w:"20%"},
+    {k:"how",label:"AI・自動化方法",type:"select",w:"14%",opts:["AIエージェント","音声AI","RAG","メール自動生成","Excel自動化","RPA","システム連携","ダッシュボード","OCR","画像AI","その他"]},
+    {k:"effect",label:"想定効果",w:"20%"}
+  ]}
+]},
+
+{t:"優先順位評価",hint:"最有力候補の業務を1つ選んで採点",blocks:[
+  {type:"fields",items:[{k:"target",label:"評価対象の業務"}]},
+  {type:"score",items:["業務時間が多い","件数が多い","人手不足への影響","定型化しやすい","属人化している","ミス削減効果","顧客満足への影響","AI化しやすい","他部署へ展開できる","他社へ横展開できる"]}
+]},
+
+{t:"現状KPI",hint:"AI導入前の数値を取得する",blocks:[
+  {type:"table",id:"kpi",fixed:true,firstLabel:"KPI",
+   labels:["月間処理件数","月間作業時間","1件あたり時間","担当人数","受電件数","架電件数","メール件数","問い合わせ件数","商談件数","試乗件数","受注率","納車件数","ミス件数","顧客待ち時間"],
+   cols:[{k:"now",label:"現状",w:"36%"},{k:"memo",label:"補足・測定方法",w:"44%"}]}
+]},
+
+{t:"現場からの希望",blocks:[
+  {type:"textarea",k:"wish",label:"AIやシステムで「こんなことができたら助かる」ということはありますか？",rows:5}
+]},
+
+{t:"FDE総括",blocks:[
+  {type:"picks"},
+  {type:"triple",groups:[
+    {k:"issue",label:"現状の主要課題"},
+    {k:"priority",label:"優先して改善すべき業務"},
+    {k:"agent",label:"AIエージェント候補"},
+    {k:"quick",label:"すぐ実行できる改善"},
+    {k:"deep",label:"詳細ヒアリング対象"}
+  ]},
+  {type:"check",label:"必要資料",items:["業務マニュアル","Excel管理表","FAQ","電話応対マニュアル","メールテンプレート","システム画面","月次集計","問い合わせ履歴","商談・受注データ","納車スケジュール"],other:true}
+]},
+
+{t:"グループ全体集計用",hint:"業務棚卸しの入力から自動生成",blocks:[
+  {type:"agg"}
+]}
+];
+
+const TEMPLATES = {
+  generic:{
+    id:"generic",
+    name:"汎用（あらゆる業種）",
+    desc:"業種を問わず使える標準の業務ヒアリング。まずはこちら。",
+    formName:"FDE初回ヒアリングシート",
+    sub:"RAGNIZE　/　FIELD DEPLOYED ENGINEER",
+    companies:[],
+    domains:GENERIC_DOMAINS,
+    domainOf:GENERIC_DOMAIN_OF,
+    schema:GENERIC_SCHEMA
+  },
+  automotive:{
+    id:"automotive",
+    name:"自動車ディーラー",
+    desc:"新車・中古車・整備・保険・グループ連携まで。ロードカーグループ向けの詳細版。",
+    formName:"FDE初回ヒアリングシート",
+    sub:"RAGNIZE　/　FIELD DEPLOYED ENGINEER",
+    companies:AUTO_COMPANIES,
+    domains:AUTO_DOMAINS,
+    domainOf:AUTO_DOMAIN_OF,
+    schema:AUTO_SCHEMA
+  }
+};
+
+/* ============================================================
+   状態（テンプレートで切り替わる）
+   ============================================================ */
+const LS_KEY = "ragnize_fde_config_v1";
+const main = document.getElementById("main");
+const toc  = document.getElementById("toc");
+
+let SCHEMA = [];
+let DOMAINS = [];
+let DOMAIN_OF = {};
+let PICK_LABELS = {};
+let tableState = {};   // id -> {def, key}
+let scoreState = {};   // sec -> [values]
+let activeCfg = null;  // {templateId, orgName, subtitle, companies:[]}
+let io = null;
+let links = [];
+
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const domOf = t => DOMAIN_OF[t] || "共通";
+
+/* ============================================================
+   ブロック描画
+   ============================================================ */
+function fieldInput(key,def){
+  const t = def.input || def.type || "text";
+  if(t==="select"){
+    return `<select data-k="${key}"><option value=""></option>`+
+      (def.opts||[]).map(o=>`<option>${esc(o)}</option>`).join("")+`</select>`;
+  }
+  if(t==="textarea") return `<textarea data-k="${key}" rows="${def.rows||3}"></textarea>`;
+  return `<input type="${t}" data-k="${key}">`;
+}
+
+function renderBlock(sec,bi,b){
+  const key = p => `s${sec.n}.${bi}.${p}`;
+  let h = "";
+  if(b.label) h += `<div class="blk-label">${esc(b.label)}</div>`;
+
+  switch(b.type){
+
+  case "note":
+    h += `<p class="note">${esc(b.text)}</p>`;
+    break;
+
+  case "fields":
+    h += `<div class="grid">`+b.items.map(f=>
+      `<div class="field"><label for="">${esc(f.label)}</label>${fieldInput(key(f.k),f)}</div>`).join("")+`</div>`;
+    break;
+
+  case "qa":
+    h += `<table class="qa"><tbody>`+b.items.map((q,i)=>
+      `<tr><th>${esc(q)}</th><td><input type="text" data-k="${key("q"+i)}"></td></tr>`).join("")+`</tbody></table>`;
+    break;
+
+  case "check":
+    h += `<div class="checks">`+b.items.map((c,i)=>
+      `<label class="chk"><input type="checkbox" data-k="${key("c"+i)}"><span>${esc(c)}</span></label>`).join("")+`</div>`;
+    if(b.other) h += `<div class="field" style="margin-top:8px;max-width:420px"><label>その他</label><input type="text" data-k="${key("other")}"></div>`;
+    break;
+
+  case "table":{
+    const id = b.id;
+    tableState[id] = {def:b,key:key("t")};
+    h += `<div class="tbl-scroll"><table class="dt" id="tbl-${id}"><thead><tr>`;
+    if(b.fixed) h += `<th style="width:11%">${esc(b.firstLabel||"")}</th>`;
+    else if(b.flag) h += `<th style="width:38px"></th>`;
+    h += b.cols.map(c=>`<th${c.w?` style="width:${c.w}"`:""}>${esc(c.label)}</th>`).join("");
+    if(b.flag && b.fixed) h += `<th style="width:38px"></th>`;
+    if(!b.fixed) h += `<th style="width:30px"></th>`;
+    h += `</tr></thead><tbody></tbody></table></div>`;
+    if(!b.fixed) h += `<button class="addrow" data-add="${id}">＋ 行を追加</button>`;
+    break;}
+
+  case "score":{
+    scoreState[sec.n] = new Array(b.items.length).fill(null);
+    h += `<div class="score-wrap"><div class="score-list">`+
+      b.items.map((it,i)=>`<div class="score-row"><span class="lbl">${esc(it)}</span><span class="seg" data-seg="${i}">`+
+        [1,2,3,4,5].map(v=>`<button type="button" data-v="${v}" aria-label="${esc(it)} ${v}点">${v}</button>`).join("")+
+      `</span></div>`).join("")+
+      `</div><div class="gauge">
+        <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="合計点ゲージ">
+          <circle cx="70" cy="70" r="60" fill="none" stroke="#E3E6EB" stroke-width="10"/>
+          <circle id="gauge-arc" cx="70" cy="70" r="60" fill="none" stroke="#16294D" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="0 377" transform="rotate(-90 70 70)"/>
+          <circle cx="70" cy="70" r="44" fill="none" stroke="#E3E6EB" stroke-width="1"/>
+          <text id="gauge-num" x="70" y="72" text-anchor="middle" font-family="Consolas,monospace"
+                font-size="30" fill="#16294D">0</text>
+          <text x="70" y="90" text-anchor="middle" font-family="Consolas,monospace" font-size="12" fill="#6B7280">/ 50</text>
+        </svg>
+        <div class="grade">優先度 <b id="gauge-grade">—</b></div>
+      </div></div>`;
+    break;}
+
+  case "textarea":
+    h += `<div class="field"><label>${esc(b.label)}</label><textarea data-k="${key(b.k)}" rows="${b.rows||4}"></textarea></div>`;
+    break;
+
+  case "triple":
+    h += `<div class="grid">`+b.groups.map(g=>
+      `<div class="field"><label>${esc(g.label)}</label>`+
+      [0,1,2].map(i=>`<input type="text" data-k="${key(g.k+i)}" placeholder="${i+1}." style="margin-bottom:5px">`).join("")+
+      `</div>`).join("")+`</div>`;
+    break;
+
+  case "picks":
+    h += `<div class="picks" id="picks"><h3>★ 深掘り候補（各表で★を付けた項目）</h3><p class="empty">まだ選ばれていません。</p></div>`;
+    break;
+
+  case "agg":
+    h += `<p class="note">業務棚卸しと基本情報から自動生成します。課題以降はこの表で追記してください。「Excelにコピー」「CSVをダウンロード」でそのまま業務一覧へ渡せます。</p>
+      <div class="tbl-scroll"><table class="dt" id="tbl-agg"><thead><tr>
+      <th style="width:13%">会社</th><th style="width:10%">部署</th><th style="width:14%">業務</th>
+      <th style="width:8%">月間時間</th><th style="width:7%">件数</th>
+      <th style="width:16%">課題</th><th style="width:16%">AI化案</th>
+      <th style="width:8%">優先度</th><th style="width:8%">横展開</th></tr></thead><tbody></tbody></table></div>`;
+    break;
+  }
+  return `<div class="blk">${h}</div>`;
+}
+
+/* ---------- 動的テーブル ---------- */
+function cellInput(id,r,c){
+  const k = `${id}.${r}.${c.k}`;
+  if(c.calc) return `<td class="calc" data-calc="${c.calc}" data-k="${k}">—</td>`;
+  if(c.type==="select"){
+    return `<td><select data-k="${k}"><option value=""></option>`+
+      c.opts.map(o=>`<option>${esc(o)}</option>`).join("")+`</select></td>`;
+  }
+  return `<td><input type="${c.type||"text"}" data-k="${k}"></td>`;
+}
+
+function addRow(id,index){
+  const st = tableState[id], b = st.def;
+  const tb = document.querySelector(`#tbl-${id} tbody`);
+  const r = index!==undefined ? index : tb.children.length;
+  const tr = document.createElement("tr");
+  tr.dataset.row = r;
+  let h = "";
+  if(b.fixed) h += `<td class="rowlab">${esc(b.labels[r]||"")}</td>`;
+  else if(b.flag) h += `<td><button type="button" class="flagbtn" data-flag="${id}.${r}" title="深掘り候補にする">★</button></td>`;
+  h += b.cols.map(c=>cellInput(id,r,c)).join("");
+  if(b.flag && b.fixed) h += `<td><button type="button" class="flagbtn" data-flag="${id}.${r}" title="深掘り候補にする">★</button></td>`;
+  if(!b.fixed) h += `<td><button type="button" class="delrow" data-del="${id}" title="この行を削除">×</button></td>`;
+  tr.innerHTML = h;
+  tb.appendChild(tr);
+  return tr;
+}
+
+function reindex(id){
+  const tb = document.querySelector(`#tbl-${id} tbody`);
+  [...tb.children].forEach((tr,r)=>{
+    tr.dataset.row = r;
+    tr.querySelectorAll("[data-k]").forEach(el=>{
+      el.dataset.k = el.dataset.k.replace(/^([^.]+)\.\d+\./,`$1.${r}.`);
+    });
+    const f = tr.querySelector("[data-flag]");
+    if(f) f.dataset.flag = `${id}.${r}`;
+  });
+}
+
+/* ============================================================
+   計算・同期
+   ============================================================ */
+function recalcRow(tr){
+  tr.querySelectorAll("[data-calc]").forEach(td=>{
+    if(td.dataset.calc==="hours"){
+      const g = k => parseFloat((tr.querySelector(`[data-k$=".${k}"]`)||{}).value)||0;
+      const cnt = g("count"), min = g("min");
+      const hrs = cnt*min/60;
+      td.textContent = hrs>0 ? hrs.toFixed(1)+" h" : "—";
+      td.dataset.val = hrs>0 ? hrs.toFixed(1) : "";
+    }
+  });
+}
+
+function collectPicks(){
+  const out = [];
+  document.querySelectorAll(".flagbtn.on").forEach(btn=>{
+    const [id,r] = btn.dataset.flag.split(".");
+    const tr = btn.closest("tr");
+    const label = PICK_LABELS[id] || id;
+    const lab = tr.querySelector(".rowlab");
+    const first = tr.querySelector("input[type=text],select");
+    const txt = first && first.value ? first.value : "";
+    const name = lab ? (lab.textContent + (txt?`：${txt}`:""))
+               : (txt || `（${label} ${Number(r)+1}行目・未記入）`);
+    out.push({label,name});
+  });
+  return out;
+}
+
+function renderPicks(){
+  const box = document.getElementById("picks");
+  if(!box) return;
+  const picks = collectPicks();
+  document.getElementById("m-flag").textContent = picks.length+"件";
+  box.innerHTML = `<h3>★ 深掘り候補（各表で★を付けた項目）</h3>` +
+    (picks.length
+      ? `<ol>`+picks.map(p=>`<li>${esc(p.name)} <span style="color:#6B7280;font-size:11.5px">/ ${esc(p.label)}</span></li>`).join("")+`</ol>`
+      : `<p class="empty">まだ選ばれていません。表の★を押すとここに集まります。</p>`);
+}
+
+function renderAgg(){
+  const tb = document.querySelector("#tbl-agg tbody");
+  if(!tb) return;
+  const company = val("s1.0.company"), dept = val("s1.0.dept");
+  const rows = [...document.querySelectorAll("#tbl-tasks tbody tr")].map(tr=>({
+    name:(tr.querySelector('[data-k$=".name"]')||{}).value||"",
+    hours:(tr.querySelector('[data-calc="hours"]')||{}).dataset?.val||"",
+    count:(tr.querySelector('[data-k$=".count"]')||{}).value||""
+  })).filter(r=>r.name);
+
+  const prev = {};
+  [...tb.children].forEach(tr=>{
+    const nm = tr.dataset.name;
+    prev[nm] = ["issue","ai","prio","spread"].reduce((o,k)=>{
+      const el = tr.querySelector(`[data-k$=".${k}"]`); o[k]=el?el.value:""; return o;
+    },{});
+  });
+
+  tb.innerHTML = rows.length ? rows.map((r,i)=>`<tr data-name="${esc(r.name)}">
+    <td class="rowlab">${esc(company||"—")}</td><td class="rowlab">${esc(dept||"—")}</td>
+    <td class="rowlab">${esc(r.name)}</td>
+    <td class="calc">${r.hours?r.hours+" h":"—"}</td><td class="calc">${esc(r.count||"—")}</td>
+    <td><input type="text" data-k="agg.${i}.issue"></td>
+    <td><input type="text" data-k="agg.${i}.ai"></td>
+    <td><select data-k="agg.${i}.prio"><option value=""></option><option>A：すぐ着手</option><option>B：詳細ヒアリング</option><option>C：中長期候補</option><option>D：対象外</option></select></td>
+    <td><select data-k="agg.${i}.spread"><option value=""></option><option>高</option><option>中</option><option>低</option></select></td></tr>`).join("")
+    : `<tr><td colspan="9" style="color:#6B7280;font-size:12.5px;padding:12px 4px">業務棚卸しに業務名を入力すると、ここに集計行が並びます。</td></tr>`;
+
+  [...tb.children].forEach(tr=>{
+    const p = prev[tr.dataset.name];
+    if(!p) return;
+    Object.keys(p).forEach(k=>{
+      const el = tr.querySelector(`[data-k$=".${k}"]`);
+      if(el && p[k]) el.value = p[k];
+    });
+  });
+}
+
+function val(k){ const el = document.querySelector(`[data-k="${k}"]`); return el ? el.value : ""; }
+
+function updateProgress(){
+  let all=0, done=0;
+  SCHEMA.forEach(sec=>{
+    const s = document.getElementById("sec"+sec.n);
+    if(!s || s.classList.contains("filtered-out")) return;
+    const els = [...s.querySelectorAll("input[type=text],input[type=number],input[type=date],select,textarea")];
+    let t=els.length, d=els.filter(e=>e.value.trim()!=="").length;
+    const chk = [...s.querySelectorAll("input[type=checkbox]")];
+    if(chk.length){ t+=1; if(chk.some(c=>c.checked)) d+=1; }
+    if(scoreState[sec.n]){ t+=1; if(scoreState[sec.n].every(v=>v!==null)) d+=1; }
+    all+=t; done+=d;
+    const pct = t? Math.round(d/t*100):0;
+    const a = toc.querySelector(`a[data-sec="${sec.n}"]`);
+    if(a){ a.querySelector(".pct").textContent = pct+"%"; a.classList.toggle("done",pct>=100); }
+  });
+  document.getElementById("m-pct").textContent = (all?Math.round(done/all*100):0)+"%";
+}
+
+function updateMeta(){
+  const set=(id,v)=>document.getElementById(id).textContent = v||"未入力";
+  set("m-company",val("s1.0.company"));
+  set("m-dept",val("s1.0.dept"));
+  set("m-date",val("s1.0.date"));
+}
+
+function updateGauge(sec){
+  if(!scoreState[sec]) return;
+  const total = scoreState[sec].reduce((a,b)=>a+(b||0),0);
+  const arc = document.getElementById("gauge-arc");
+  if(!arc) return;
+  const C = 2*Math.PI*60;
+  arc.setAttribute("stroke-dasharray",`${(total/50*C).toFixed(1)} ${C.toFixed(1)}`);
+  document.getElementById("gauge-num").textContent = total;
+  const g = total>=40?"A：すぐ着手":total>=30?"B：詳細ヒアリング":total>=20?"C：中長期候補":total>0?"D：現時点では対象外":"—";
+  document.getElementById("gauge-grade").textContent = g;
+}
+
+/* ============================================================
+   フォーム構築（テンプレート＋設定から生成）
+   ============================================================ */
+function buildForm(cfg){
+  const tpl = TEMPLATES[cfg.templateId] || TEMPLATES.generic;
+  activeCfg = {
+    templateId: tpl.id,
+    orgName: cfg.orgName || "",
+    subtitle: cfg.subtitle || tpl.sub,
+    companies: Array.isArray(cfg.companies) ? cfg.companies.slice() : []
+  };
+
+  // スキーマを複製し、章番号を採番、会社プルダウンを設定から流し込む
+  SCHEMA = JSON.parse(JSON.stringify(tpl.schema));
+  SCHEMA.forEach((s,i)=>s.n=i+1);
+  const companyField = SCHEMA[0].blocks[0].items.find(f=>f.k==="company");
+  if(companyField){
+    if(activeCfg.companies.length){ companyField.input="select"; companyField.opts=activeCfg.companies; }
+    else { companyField.input="text"; delete companyField.opts; }
+  }
+
+  DOMAINS = tpl.domains;
+  DOMAIN_OF = tpl.domainOf;
+  PICK_LABELS = {};
+  tpl.schema.forEach(sec=>sec.blocks.forEach(b=>{ if(b.flag&&b.id) PICK_LABELS[b.id]=b.flagLabel||b.id; }));
+
+  tableState = {};
+  scoreState = {};
+  main.innerHTML = "";
+  toc.innerHTML = "";
+
+  SCHEMA.forEach(sec=>{
+    const dom = domOf(sec.t);
+    const s = document.createElement("section");
+    s.className = "card";
+    s.id = "sec"+sec.n;
+    s.dataset.sec = sec.n;
+    s.dataset.dom = dom;
+    s.innerHTML = `<div class="sec-head"><span class="sec-num">${String(sec.n).padStart(2,"0")}</span>
+      <h2>${esc(sec.t)}</h2>${dom!=="共通"?`<span class="domtag">${esc(dom)}</span>`:""}
+      ${sec.hint?`<span class="hint">${esc(sec.hint)}</span>`:""}</div>`
+      + sec.blocks.map((b,i)=>renderBlock(sec,i,b)).join("");
+    main.appendChild(s);
+
+    const a = document.createElement("a");
+    a.href = "#sec"+sec.n;
+    a.dataset.sec = sec.n;
+    a.dataset.dom = dom;
+    a.innerHTML = `<span class="num">${String(sec.n).padStart(2,"0")}</span><span class="ttl">${esc(sec.t)}</span><span class="pct">0%</span>`;
+    toc.appendChild(a);
+  });
+
+  // 各テーブルの初期行を生成
+  Object.keys(tableState).forEach(id=>{
+    const b = tableState[id].def;
+    const n = b.fixed ? b.labels.length : (b.rows||3);
+    for(let i=0;i<n;i++) addRow(id,i);
+  });
+
+  // 領域フィルタの選択肢を再構築
+  const domSel = document.getElementById("dom-filter");
+  domSel.innerHTML = `<option value="">全領域を表示</option>`;
+  DOMAINS.forEach(d=>{
+    const o = document.createElement("option");
+    o.value = d; o.textContent = d;
+    domSel.appendChild(o);
+  });
+
+  // 見出し・タイトル
+  const title = (activeCfg.orgName ? activeCfg.orgName+" " : "") + tpl.formName;
+  document.getElementById("brand-title").textContent = title;
+  document.getElementById("brand-sub").textContent = activeCfg.subtitle;
+  document.title = title;
+
+  // スクロール連動を張り直す
+  links = [...toc.querySelectorAll("a")];
+  if("IntersectionObserver" in window){
+    if(io) io.disconnect();
+    io = new IntersectionObserver(ents=>{
+      ents.forEach(en=>{
+        if(en.isIntersecting){
+          links.forEach(a=>a.classList.remove("active"));
+          const a = toc.querySelector(`a[data-sec="${en.target.dataset.sec}"]`);
+          if(a){ a.classList.add("active"); a.scrollIntoView({block:"nearest"}); }
+        }
+      });
+    },{rootMargin:"-120px 0px -70% 0px"});
+    document.querySelectorAll("section.card").forEach(s=>io.observe(s));
+  }
+
+  renderAgg(); renderPicks(); updateProgress(); updateMeta();
+  if(links[0]) links[0].classList.add("active");
+}
+
+/* ============================================================
+   イベント（委任・1度だけ登録）
+   ============================================================ */
+let dirty = false;
+
+main.addEventListener("input",e=>{
+  const el = e.target;
+  dirty = true;
+  el.classList.toggle("filled", el.value && el.value.trim()!=="");
+  const tr = el.closest("tr");
+  if(tr) recalcRow(tr);
+  if(el.closest("#tbl-tasks") || el.dataset.k==="s1.0.company" || el.dataset.k==="s1.0.dept") renderAgg();
+  if(el.closest("#tbl-tasks")||el.closest("#tbl-drop")||el.closest("#tbl-ai")) renderPicks();
+  updateMeta(); updateProgress();
+});
+
+main.addEventListener("change",e=>{
+  if(e.target.type==="checkbox"){
+    e.target.closest(".chk").classList.toggle("on",e.target.checked);
+    dirty = true; updateProgress();
+  }
+});
+
+main.addEventListener("click",e=>{
+  const add = e.target.closest("[data-add]");
+  if(add){ const tr = addRow(add.dataset.add); tr.querySelector("input,select").focus(); dirty=true; updateProgress(); return; }
+
+  const del = e.target.closest("[data-del]");
+  if(del){
+    const id = del.dataset.del, tb = document.querySelector(`#tbl-${id} tbody`);
+    if(tb.children.length<=1){ toast("最後の1行は削除できません"); return; }
+    del.closest("tr").remove(); reindex(id);
+    dirty=true; renderPicks(); renderAgg(); updateProgress(); return;
+  }
+
+  const flag = e.target.closest("[data-flag]");
+  if(flag){
+    flag.classList.toggle("on");
+    flag.closest("tr").classList.toggle("flagged",flag.classList.contains("on"));
+    dirty=true; renderPicks(); return;
+  }
+
+  const seg = e.target.closest(".seg button");
+  if(seg){
+    const wrap = seg.parentElement, idx = +wrap.dataset.seg, v = +seg.dataset.v;
+    const sec = +seg.closest("section").dataset.sec;
+    const cur = scoreState[sec][idx];
+    scoreState[sec][idx] = (cur===v) ? null : v;
+    [...wrap.children].forEach(b=>b.classList.toggle("on",+b.dataset.v===scoreState[sec][idx]));
+    updateGauge(sec); dirty=true; updateProgress();
+  }
+});
+
+/* 領域フィルタ */
+document.getElementById("dom-filter").onchange = function(){
+  const v = this.value;
+  const hit = el => !v || el.dataset.dom==="共通" || el.dataset.dom===v;
+  document.querySelectorAll("section.card").forEach(s=>s.classList.toggle("filtered-out",!hit(s)));
+  links.forEach(a=>a.classList.toggle("filtered-out",!hit(a)));
+  updateProgress();
+  toast(v ? v+"に関係する章だけを表示しています" : "全領域を表示しています");
+};
+
+/* ============================================================
+   設定（会社・テンプレート）モーダル
+   ============================================================ */
+const setupEl = document.getElementById("setup");
+let setupTpl = "generic";
+
+function renderTplOpts(){
+  const box = document.getElementById("tpl-opts");
+  box.innerHTML = Object.values(TEMPLATES).map(t=>
+    `<div class="tpl-opt${t.id===setupTpl?" on":""}" data-tpl="${t.id}">
+       <b>${esc(t.name)}</b><span>${esc(t.desc)}</span></div>`).join("");
+  box.querySelectorAll(".tpl-opt").forEach(o=>o.onclick=()=>{
+    setupTpl = o.dataset.tpl;
+    renderTplOpts();
+    // 会社欄が空ならテンプレート既定の会社を提案として流し込む
+    const ta = document.getElementById("cfg-companies");
+    if(!ta.value.trim()) ta.value = (TEMPLATES[setupTpl].companies||[]).join("\n");
+  });
+}
+
+function openSetup(){
+  const cfg = activeCfg || loadConfig() || {templateId:"generic",orgName:"",subtitle:"",companies:[]};
+  setupTpl = cfg.templateId || "generic";
+  renderTplOpts();
+  document.getElementById("cfg-org").value = cfg.orgName || "";
+  document.getElementById("cfg-sub").value = cfg.subtitle || TEMPLATES[setupTpl].sub;
+  document.getElementById("cfg-companies").value = (cfg.companies&&cfg.companies.length ? cfg.companies : (TEMPLATES[setupTpl].companies||[])).join("\n");
+  document.getElementById("setup-warn").textContent = dirty ? "※ 適用すると入力内容がリセットされます。先にJSONで保存してください。" : "";
+  setupEl.hidden = false;
+}
+function closeSetup(){ setupEl.hidden = true; }
+
+document.getElementById("btn-setup").onclick = openSetup;
+document.getElementById("setup-cancel").onclick = closeSetup;
+document.getElementById("setup-ok").onclick = ()=>{
+  const cfg = {
+    templateId: setupTpl,
+    orgName: document.getElementById("cfg-org").value.trim(),
+    subtitle: document.getElementById("cfg-sub").value.trim() || TEMPLATES[setupTpl].sub,
+    companies: document.getElementById("cfg-companies").value.split("\n").map(s=>s.trim()).filter(Boolean)
+  };
+  saveConfig(cfg);
+  buildForm(cfg);
+  dirty = false;
+  closeSetup();
+  toast("ヒアリングシートを設定しました");
+};
+
+/* 設定の保存（ブラウザに残して次回も同じ会社で開けるように・ベストエフォート） */
+function saveConfig(cfg){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }catch(e){}
+}
+function loadConfig(){
+  try{ const s = localStorage.getItem(LS_KEY); return s ? JSON.parse(s) : null; }catch(e){ return null; }
+}
+
+/* ============================================================
+   保存・書き出し
+   ============================================================ */
+function serialize(){
+  const data = {
+    meta:{app:"RAGNIZE FDE hearing sheet",version:2,savedAt:new Date().toISOString()},
+    config:activeCfg,
+    fields:{},checks:{},scores:scoreState,flags:[],tableRows:{}
+  };
+  document.querySelectorAll("[data-k]").forEach(el=>{
+    if(el.tagName==="TD") return;
+    if(el.type==="checkbox") data.checks[el.dataset.k] = el.checked;
+    else data.fields[el.dataset.k] = el.value;
+  });
+  document.querySelectorAll(".flagbtn.on").forEach(b=>data.flags.push(b.dataset.flag));
+  Object.keys(tableState).forEach(id=>{
+    data.tableRows[id] = document.querySelectorAll(`#tbl-${id} tbody tr`).length;
+  });
+  return data;
+}
+
+function restore(data){
+  // 保存時のテンプレート・会社設定でフォームを組み直してから流し込む
+  if(data.config && data.config.templateId){
+    buildForm(data.config);
+    saveConfig(data.config);
+  }
+  Object.keys(data.tableRows||{}).forEach(id=>{
+    const b = tableState[id]?.def; if(!b||b.fixed) return;
+    const tb = document.querySelector(`#tbl-${id} tbody`);
+    while(tb.children.length > data.tableRows[id]) tb.lastElementChild.remove();
+    while(tb.children.length < data.tableRows[id]) addRow(id);
+  });
+  Object.entries(data.fields||{}).forEach(([k,v])=>{
+    const el = document.querySelector(`[data-k="${k}"]`);
+    if(el && el.tagName!=="TD"){ el.value = v; el.classList.toggle("filled",!!v); }
+  });
+  Object.entries(data.checks||{}).forEach(([k,v])=>{
+    const el = document.querySelector(`[data-k="${k}"]`);
+    if(el){ el.checked = !!v; el.closest(".chk").classList.toggle("on",!!v); }
+  });
+  Object.entries(data.scores||{}).forEach(([sec,arr])=>{
+    if(!scoreState[sec]) return;
+    scoreState[sec] = arr;
+    const s = document.getElementById("sec"+sec);
+    arr.forEach((v,i)=>{
+      const wrap = s.querySelector(`.seg[data-seg="${i}"]`);
+      if(wrap) [...wrap.children].forEach(b=>b.classList.toggle("on",+b.dataset.v===v));
+    });
+    updateGauge(+sec);
+  });
+  document.querySelectorAll(".flagbtn").forEach(b=>{
+    const on = (data.flags||[]).includes(b.dataset.flag);
+    b.classList.toggle("on",on); b.closest("tr").classList.toggle("flagged",on);
+  });
+  document.querySelectorAll("#tbl-tasks tbody tr,#tbl-flow tbody tr").forEach(recalcRow);
+  renderAgg();
+  // 集計欄は業務棚卸しから作り直すため、テーブル生成後にもう一度流し込む
+  Object.entries(data.fields||{}).forEach(([k,v])=>{
+    if(!k.startsWith("agg.")) return;
+    const el = document.querySelector(`[data-k="${k}"]`);
+    if(el){ el.value = v; el.classList.toggle("filled",!!v); }
+  });
+  renderPicks(); updateMeta(); updateProgress();
+  dirty = false;
+}
+
+function download(name,text,mime){
+  const blob = new Blob([text],{type:mime});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+function fileStem(){
+  const c = (val("s1.0.company")||"未設定").replace(/株式会社|㈱/g,"");
+  const d = val("s1.0.dept")||"部署未設定";
+  const day = val("s1.0.date")||new Date().toISOString().slice(0,10);
+  return `FDEヒアリング_${c}_${d}_${day}`.replace(/[\/\\:*?"<>|]/g,"_");
+}
+
+function buildRows(){
+  const company = val("s1.0.company"), dept = val("s1.0.dept");
+  const head = ["会社","部署","業務","月間時間","件数","課題","AI化案","優先度","横展開","深掘り"];
+  const trs = [...document.querySelectorAll("#tbl-agg tbody tr")].filter(tr=>tr.dataset.name);
+  const flagged = collectPicks().map(p=>p.name);
+  const rows = trs.map(tr=>{
+    const g = k => (tr.querySelector(`[data-k$=".${k}"]`)||{}).value||"";
+    const c = [...tr.children];
+    return [company,dept,tr.dataset.name,c[3].textContent.replace(" h",""),c[4].textContent.replace("—",""),
+            g("issue"),g("ai"),g("prio"),g("spread"),flagged.includes(tr.dataset.name)?"★":""]
+           .map(v=>v==="—"?"":v);
+  });
+  return {head,rows};
+}
+
+document.getElementById("btn-save").onclick = ()=>{
+  download(fileStem()+".json",JSON.stringify(serialize(),null,2),"application/json");
+  dirty = false; toast("JSONを保存しました");
+};
+document.getElementById("btn-load").onclick = ()=>document.getElementById("file-in").click();
+document.getElementById("file-in").onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{ restore(JSON.parse(rd.result)); toast("読み込みました"); }
+    catch(err){ toast("読み込めませんでした。このフォームで保存したJSONを選んでください"); }
+  };
+  rd.readAsText(f); e.target.value = "";
+};
+document.getElementById("btn-tsv").onclick = async ()=>{
+  const {head,rows} = buildRows();
+  if(!rows.length){ toast("業務棚卸しに業務を入力すると書き出せます"); return; }
+  const tsv = [head,...rows].map(r=>r.join("\t")).join("\n");
+  try{ await navigator.clipboard.writeText(tsv); toast(rows.length+"行をコピーしました。Excelに貼り付けてください"); }
+  catch(err){ download(fileStem()+".tsv",tsv,"text/tab-separated-values"); toast("コピーできないためTSVを保存しました"); }
+};
+document.getElementById("btn-csv").onclick = ()=>{
+  const {head,rows} = buildRows();
+  if(!rows.length){ toast("業務棚卸しに業務を入力すると書き出せます"); return; }
+  const q = v => `"${String(v).replace(/"/g,'""')}"`;
+  const csv = "﻿"+[head,...rows].map(r=>r.map(q).join(",")).join("\r\n");
+  download(fileStem()+".csv",csv,"text/csv");
+  toast("CSVを保存しました");
+};
+document.getElementById("btn-print").onclick = ()=>window.print();
+
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+window.addEventListener("beforeunload",e=>{
+  if(!dirty) return;
+  e.preventDefault(); e.returnValue = "";
+});
+
+const savebar = document.getElementById("savebar");
+savebar.onclick = ()=>savebar.classList.add("hide");
+setTimeout(()=>savebar.classList.add("hide"),12000);
+
+/* ============================================================
+   初期化
+   ============================================================ */
+(function init(){
+  const saved = loadConfig();
+  if(saved && saved.templateId){
+    buildForm(saved);       // 前回の会社設定でそのまま開く
+  }else{
+    buildForm({templateId:"generic",orgName:"",subtitle:"",companies:[]}); // 背景に空フォーム
+    openSetup();            // 初回は設定モーダルを出す
+  }
+})();
+</script>
+</body>
+</html>

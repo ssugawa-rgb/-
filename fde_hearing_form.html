@@ -342,6 +342,7 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
       <button class="btn" id="btn-quote">見積を作成</button>
       <button class="btn btn-primary" id="btn-save">JSONで保存</button>
       <span class="btn" id="who" hidden style="cursor:default;border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.08)"></span>
+      <button class="btn" id="btn-editor" hidden>編集者名</button>
       <button class="btn" id="btn-account" hidden>アカウント</button>
       <button class="btn" id="btn-admin" hidden>管理</button>
       <button class="btn" id="btn-logout" hidden>ログアウト</button>
@@ -517,6 +518,20 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
     <div class="modal-foot">
       <span class="sp hist-warn" id="acct-msg"></span>
       <span style="display:flex;gap:10px"><button class="mbtn" id="acct-close" type="button">閉じる</button><button class="mbtn primary" id="acct-ok" type="button">変更する</button></span>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 編集者名（共有DB時）モーダル ---------- -->
+<div class="modal-bg" id="editormodal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2>編集者名</h2><p>YOUR NAME</p></div>
+    <div class="modal-body">
+      <p class="hintline">履歴の「更新者」に表示されます。共有メンバーが誰の更新か分かるように、お名前を設定してください（この端末に保存されます）。</p>
+      <div class="fg"><label class="lb" for="editor-name">お名前</label><input type="text" id="editor-name" placeholder="例）山田"></div>
+    </div>
+    <div class="modal-foot"><span class="sp"></span>
+      <span style="display:flex;gap:10px"><button class="mbtn" id="editor-close" type="button">閉じる</button><button class="mbtn primary" id="editor-ok" type="button">保存</button></span>
     </div>
   </div>
 </div>
@@ -1193,7 +1208,7 @@ document.getElementById("setup-ok").onclick = ()=>{
     companies: document.getElementById("cfg-companies").value.split("\n").map(s=>s.trim()).filter(Boolean)
   };
   saveConfig(cfg);
-  if(setupMode==="new"){ libState.currentId = REMOTE ? null : newId(); quoteState = null; }
+  if(setupMode==="new"){ libState.currentId = MODE==="local" ? newId() : null; quoteState = null; }
   buildForm(cfg);
   dirty = false;
   autosave();          // 新規/変更後の状態を履歴に反映
@@ -1217,11 +1232,14 @@ function loadConfig(){
    静的ファイル単体      … この端末のブラウザ(localStorage)に保存。
    ============================================================ */
 const REMOTE = !!window.__FDE_API__;
+let DB = null;                        // アーティファクト共有DB（claude.use("db")）
+let MODE = REMOTE ? "api" : "local";  // "api"=自社サーバー / "db"=アーティファクト共有 / "local"=端末保存
 const LS_LIB = "ragnize_fde_library_v1";
 const LS_DATA = "ragnize_fde_data_v1";   // 旧・単一スロット（移行用）
+const LS_EDITOR = "ragnize_fde_editor";  // 共有DB時の「編集者名」
 let libState = {currentId:null, records:{}};   // ローカル用
-let libMeta = [];                              // リモート用の一覧キャッシュ
-let CSRF = "", ME = null;
+let libMeta = [];                              // 共有/サーバー用の一覧キャッシュ
+let CSRF = "", ME = null, EDITOR = "";
 let saveTimer, savingP = Promise.resolve(), histArmDel = null;
 
 function loadLib(){ try{ const s=localStorage.getItem(LS_LIB); return s?JSON.parse(s):null; }catch(e){ return null; } }
@@ -1247,15 +1265,32 @@ async function api(method,url,body){
   return ct.includes("application/json") ? r.json() : r.text();
 }
 
+/* ---------- アーティファクト共有DB ヘルパ ---------- */
+function dbNewId(){ return DB.collection("hearings").doc().id; }
+function dbMetaFromDoc(d){ const x=d.data()||{}; return {id:d.id,company:x.company||"",dept:x.dept||"",date:x.date||"",pct:x.pct||"0%",updatedAt:x.updatedAt||"",updatedBy:x.updatedBy||""}; }
+async function dbList(){ const snap=await DB.collection("hearings").get(); return snap.docs.filter(d=>d.exists).map(dbMetaFromDoc); }
+async function dbGet(id){ const s=await DB.doc("hearings/"+id).get(); return s.exists ? s.data() : null; }
+function dbRecord(){ return Object.assign({}, curMeta(), {updatedAt:new Date().toISOString(), updatedBy:EDITOR||"", data:serialize()}); }
+
 /* 現在編集中のヒアリングを保存 */
 function autosave(){
-  if(REMOTE){
+  if(MODE==="api"){
     const payload={meta:curMeta(), data:serialize()};
     savingP = savingP.then(async()=>{
       try{
         if(!libState.currentId){ const res=await api("POST","/api/hearings",payload); libState.currentId=res.id; }
         else{ await api("PUT","/api/hearings/"+encodeURIComponent(libState.currentId),payload); }
       }catch(e){ if(String(e.message)!=="unauthorized") toast("保存に失敗しました："+e.message); }
+    });
+    return savingP;
+  }
+  if(MODE==="db"){
+    const rec=dbRecord();
+    savingP = savingP.then(async()=>{
+      try{
+        if(!libState.currentId) libState.currentId=dbNewId();
+        await DB.doc("hearings/"+libState.currentId).set(rec);
+      }catch(e){ toast("共有保存に失敗しました："+(e.message||e.code||"")); }
     });
     return savingP;
   }
@@ -1268,30 +1303,45 @@ function autosave(){
 }
 function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>autosave(),600); }
 
-async function refreshLib(){ if(REMOTE) libMeta = await api("GET","/api/hearings"); }
+async function refreshLib(){
+  if(MODE==="api") libMeta = await api("GET","/api/hearings");
+  else if(MODE==="db") libMeta = await dbList();
+}
 function histRecords(){
-  if(REMOTE) return libMeta.map(m=>({id:m.id, meta:{company:m.company,dept:m.dept,date:m.date,pct:m.pct}, updatedAt:m.updatedAt, updatedBy:m.updatedBy}))
+  if(MODE!=="local") return libMeta.map(m=>({id:m.id, meta:{company:m.company,dept:m.dept,date:m.date,pct:m.pct}, updatedAt:m.updatedAt, updatedBy:m.updatedBy}))
                           .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
   return Object.values(libState.records).map(r=>({id:r.id,meta:r.meta,updatedAt:r.updatedAt}))
               .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
 }
 
-async function openRecord(id){
+async function openRecord(id, skipSave){
   histArmDel=null;
-  if(REMOTE){
-    await autosave();
+  if(MODE==="api"){
+    if(!skipSave) await autosave();
     const rec=await api("GET","/api/hearings/"+encodeURIComponent(id));
     libState.currentId=id; restore(rec.data);
     await refreshLib(); renderHist(); return;
   }
+  if(MODE==="db"){
+    if(!skipSave) await autosave();
+    const rec=await dbGet(id); if(!rec) return;
+    libState.currentId=id; restore(rec.data||{});
+    await refreshLib(); renderHist(); return;
+  }
   const rec=libState.records[id]; if(!rec) return;
-  await autosave(); libState.currentId=id; restore(rec.data); saveLib(); renderHist();
+  if(!skipSave) await autosave(); libState.currentId=id; restore(rec.data); saveLib(); renderHist();
 }
 async function dupRecord(id){
-  if(REMOTE){
+  if(MODE==="api"){
     const rec=await api("GET","/api/hearings/"+encodeURIComponent(id));
     const res=await api("POST","/api/hearings",{meta:rec.meta,data:rec.data});
     await openRecord(res.id); toast("複製しました"); return;
+  }
+  if(MODE==="db"){
+    const src=await dbGet(id); if(!src) return;
+    const nid=dbNewId();
+    await DB.doc("hearings/"+nid).set(Object.assign({},src,{updatedAt:new Date().toISOString(),updatedBy:EDITOR||""}));
+    await openRecord(nid); toast("複製しました"); return;
   }
   const src=libState.records[id]; if(!src) return;
   const nid=newId(), now=new Date().toISOString();
@@ -1300,13 +1350,17 @@ async function dupRecord(id){
 }
 async function delRecord(id){
   histArmDel=null;
-  if(REMOTE){
-    try{ await api("DELETE","/api/hearings/"+encodeURIComponent(id)); }catch(e){ toast(e.message); return; }
+  if(MODE!=="local"){
+    try{
+      if(MODE==="api") await api("DELETE","/api/hearings/"+encodeURIComponent(id));
+      else await DB.doc("hearings/"+id).delete();
+    }catch(e){ toast(e.message||e.code||""); return; }
     await refreshLib();
     if(libState.currentId===id){
+      libState.currentId=null;   // 削除した現在レコードを切替時に再保存しない
       const rest=libMeta.slice().sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
-      if(rest.length){ await openRecord(rest[0].id); }
-      else{ libState.currentId=null; renderHist(); startNew(); return; }
+      if(rest.length){ await openRecord(rest[0].id, true); }
+      else{ renderHist(); startNew(); return; }
     }
     renderHist(); toast("削除しました"); return;
   }
@@ -1319,6 +1373,16 @@ async function delRecord(id){
   saveLib(); renderHist(); toast("削除しました");
 }
 function startNew(){ setupMode="new"; openSetup(); }
+
+/* 共有DBのライブ購読（他メンバーの変更を一覧へ反映） */
+function liveSubscribe(){
+  try{
+    DB.collection("hearings").onSnapshot(snap=>{
+      libMeta = snap.docs.filter(d=>d.exists).map(dbMetaFromDoc);
+      if(histEl && !histEl.hidden) renderHist();
+    }, ()=>{});
+  }catch(e){}
+}
 
 /* ---------- 履歴モーダル ---------- */
 const histEl = document.getElementById("histmodal");
@@ -1383,6 +1447,25 @@ if(document.getElementById("btn-logout")) document.getElementById("btn-logout").
   try{ await api("POST","/api/logout"); }catch(e){}
   location.href="/login";
 };
+/* 編集者名（共有DB時）*/
+function loadEditor(){ try{ return localStorage.getItem(LS_EDITOR)||""; }catch(e){ return ""; } }
+function showEditorUI(){
+  const b=document.getElementById("btn-editor"); if(!b) return;
+  b.hidden=false; b.textContent = EDITOR ? ("編集者: "+EDITOR) : "編集者名を設定";
+  const who=document.getElementById("who"); who.hidden=false; who.textContent="🔗 共有モード";
+}
+const editorEl=document.getElementById("editormodal");
+if(document.getElementById("btn-editor")){
+  document.getElementById("btn-editor").onclick=()=>{ document.getElementById("editor-name").value=EDITOR; editorEl.hidden=false; };
+  document.getElementById("editor-close").onclick=()=>{ editorEl.hidden=true; };
+  document.getElementById("editor-ok").onclick=()=>{
+    EDITOR=document.getElementById("editor-name").value.trim();
+    try{ localStorage.setItem(LS_EDITOR,EDITOR); }catch(e){}
+    document.getElementById("btn-editor").textContent = EDITOR ? ("編集者: "+EDITOR) : "編集者名を設定";
+    editorEl.hidden=true; toast("編集者名を保存しました");
+  };
+}
+
 /* アカウント（パスワード変更） */
 const acctEl=document.getElementById("acctmodal");
 if(document.getElementById("btn-account")){
@@ -1836,6 +1919,29 @@ setTimeout(()=>savebar.classList.add("hide"),12000);
     if(ME && ME.mustChangePassword){ toast("初回ログインです。パスワードを変更してください。"); document.getElementById("btn-account").click(); }
     return;
   }
+
+  /* アーティファクト共有DBが使えるなら「共有モード」で起動（全メンバーで共同編集） */
+  if(window.claude && typeof window.claude.use==="function"){
+    try{ DB = await window.claude.use("db"); }catch(e){ DB = null; }
+  }
+  if(DB){
+    MODE = "db";
+    EDITOR = loadEditor();
+    showEditorUI();
+    liveSubscribe();
+    try{ await refreshLib(); }catch(e){ libMeta=[]; }
+    if(libMeta.length){
+      const newest=libMeta.slice().sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0];
+      await openRecord(newest.id);
+    }else{
+      const saved=loadConfig();
+      buildForm(saved && saved.templateId ? saved : {templateId:"generic",orgName:"",subtitle:"",companies:[]});
+      startNew();
+    }
+    if(!EDITOR) toast("共有モードです。右上「編集者名」にお名前を設定してください。");
+    return;
+  }
+
   const lib = loadLib();
   if(lib && lib.records && Object.keys(lib.records).length){
     libState = lib;

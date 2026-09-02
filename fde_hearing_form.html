@@ -233,6 +233,49 @@ tr.flagged td{background:var(--flag-bg)}
 @media (max-width:520px){.tpl-opts{grid-template-columns:1fr}}
 .exp-ta{width:100%;min-height:230px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.5;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:#FCFCFD;white-space:pre;overflow:auto}
 
+/* ---------- 見積モーダル ---------- */
+.modal.wide{max-width:900px}
+.q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 14px;margin-bottom:16px}
+.q-grid .field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+.q-grid input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:4px;background:#FCFCFD}
+.q-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.q-tools .mbtn{padding:6px 12px;font-size:12px}
+table.qt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.qt th{font-size:11px;font-weight:700;color:var(--navy-2);text-align:left;padding:5px 6px;border-bottom:1px solid var(--navy);white-space:nowrap;background:#FAFBFC}
+table.qt td{padding:3px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.qt input,table.qt select{width:100%;padding:6px 7px;border:1px solid var(--line);border-radius:4px;background:#FCFCFD}
+table.qt td.amt{font-family:var(--mono);text-align:right;color:var(--navy);white-space:nowrap;padding-right:8px}
+table.qt input.num{text-align:right;font-family:var(--mono)}
+.q-tot{margin:14px 0 4px;display:flex;justify-content:flex-end}
+.q-tot table{border-collapse:collapse;min-width:280px;font-size:13px}
+.q-tot td{padding:5px 10px}
+.q-tot td.k{color:var(--muted)}
+.q-tot td.v{font-family:var(--mono);text-align:right;color:var(--ink);white-space:nowrap}
+.q-tot tr.grand td{border-top:2px solid var(--navy);font-weight:700;font-size:15px;color:var(--navy);padding-top:8px}
+
+/* ---------- 印刷用 見積書 ---------- */
+#quote-doc{display:none}
+#quote-doc .qd{max-width:720px;margin:0 auto;color:#111;font-size:13px;line-height:1.7}
+#quote-doc h1{font-size:22px;letter-spacing:.3em;text-align:center;margin:0 0 18px;border-bottom:2px solid #16294D;padding-bottom:10px}
+#quote-doc .qd-top{display:flex;justify-content:space-between;gap:24px;margin-bottom:18px}
+#quote-doc .qd-to{font-size:16px;font-weight:700;border-bottom:1px solid #333;padding-bottom:4px;min-width:240px}
+#quote-doc .qd-meta{font-size:12px;text-align:right;line-height:1.9}
+#quote-doc .qd-lead{margin:6px 0 14px;font-size:13px}
+#quote-doc .qd-big{border:1px solid #16294D;background:#F3F4F6;padding:8px 14px;font-size:16px;margin:0 0 18px;display:flex;justify-content:space-between;align-items:center}
+#quote-doc .qd-big b{font-family:var(--mono);font-size:20px;color:#16294D}
+#quote-doc table.qd-items{width:100%;border-collapse:collapse;margin-bottom:6px}
+#quote-doc table.qd-items th{background:#16294D;color:#fff;font-size:12px;padding:7px 8px;text-align:left}
+#quote-doc table.qd-items th.r,#quote-doc table.qd-items td.r{text-align:right}
+#quote-doc table.qd-items td{border-bottom:1px solid #ccc;padding:6px 8px;font-size:12.5px}
+#quote-doc table.qd-items td.r{font-family:var(--mono)}
+#quote-doc .qd-sub{width:100%;display:flex;justify-content:flex-end;margin-bottom:16px}
+#quote-doc .qd-sub table{border-collapse:collapse;min-width:260px}
+#quote-doc .qd-sub td{padding:4px 10px;font-size:13px}
+#quote-doc .qd-sub td.r{text-align:right;font-family:var(--mono)}
+#quote-doc .qd-sub tr.g td{border-top:2px solid #16294D;font-weight:700;font-size:15px;padding-top:7px}
+#quote-doc .qd-note{border:1px solid #ccc;padding:10px 12px;font-size:12px;white-space:pre-wrap;color:#333}
+#quote-doc .qd-issuer{margin-top:14px;font-size:12px;text-align:right;color:#333;white-space:pre-wrap}
+
 @media (max-width:980px){
   nav.toc{display:none}
   header{position:static}
@@ -253,6 +296,9 @@ tr.flagged td{background:var(--flag-bg)}
   .wrap{display:block;padding:0}
   section.card{border:none;border-bottom:1px solid #999;border-radius:0;padding:10px 0;page-break-inside:avoid}
   input,select,textarea{border:none;border-bottom:1px solid #ccc;background:#fff}
+  /* 見積書だけを印刷するモード */
+  body.print-quote .wrap{display:none!important}
+  body.print-quote #quote-doc{display:block!important}
 }
 </style>
 </head>
@@ -279,6 +325,7 @@ tr.flagged td{background:var(--flag-bg)}
       <button class="btn" id="btn-tsv">Excelにコピー</button>
       <button class="btn" id="btn-csv">CSVで書き出し</button>
       <button class="btn" id="btn-print">印刷</button>
+      <button class="btn" id="btn-quote">見積を作成</button>
       <button class="btn btn-primary" id="btn-save">JSONで保存</button>
       <input type="file" id="file-in" accept=".json" hidden>
     </div>
@@ -358,6 +405,65 @@ tr.flagged td{background:var(--flag-bg)}
     </div>
   </div>
 </div>
+
+<!-- ---------- 見積モーダル ---------- -->
+<div class="modal-bg" id="quotemodal" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="q-title">
+    <div class="modal-head">
+      <h2 id="q-title">簡易見積書の作成</h2>
+      <p>QUICK ESTIMATE</p>
+    </div>
+    <div class="modal-body">
+      <p class="hintline">「AI・自動化候補」から自動で明細を作成します。単価・数量はその場で調整できます。区分「月額」は運用費として別集計します。</p>
+      <div class="q-grid">
+        <div class="field"><label>宛先（お客様）</label><input type="text" id="q-to"></div>
+        <div class="field"><label>件名</label><input type="text" id="q-subject"></div>
+        <div class="field"><label>見積番号</label><input type="text" id="q-no"></div>
+        <div class="field"><label>見積日</label><input type="date" id="q-date"></div>
+        <div class="field"><label>有効期限</label><input type="text" id="q-expiry" placeholder="発行日より30日間"></div>
+        <div class="field"><label>担当（自社）</label><input type="text" id="q-staff"></div>
+      </div>
+      <div class="q-tools">
+        <button class="mbtn" id="q-import" type="button">AI候補から明細を取り込み</button>
+        <button class="mbtn" id="q-addrow" type="button">＋ 明細を追加</button>
+      </div>
+      <div class="tbl-scroll">
+        <table class="qt" id="q-items"><thead><tr>
+          <th style="width:12%">区分</th><th style="width:40%">内容</th>
+          <th style="width:10%">数量</th><th style="width:18%">単価(円)</th>
+          <th style="width:16%">金額</th><th style="width:30px"></th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="q-grid" style="margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div class="field"><label>値引き（初期費用・円）</label><input type="number" id="q-discount" value="0"></div>
+        <div class="field"><label>消費税率（％）</label><input type="number" id="q-tax" value="10"></div>
+      </div>
+      <div class="q-tot"><table>
+        <tr><td class="k">初期費用 小計</td><td class="v" id="q-init-sub">¥0</td></tr>
+        <tr><td class="k">値引き</td><td class="v" id="q-init-disc">¥0</td></tr>
+        <tr><td class="k">消費税</td><td class="v" id="q-init-tax">¥0</td></tr>
+        <tr class="grand"><td class="k">初期費用 合計</td><td class="v" id="q-init-total">¥0</td></tr>
+        <tr><td class="k" style="padding-top:12px">月額運用費 小計</td><td class="v" id="q-mon-sub" style="padding-top:12px">¥0</td></tr>
+        <tr><td class="k">消費税</td><td class="v" id="q-mon-tax">¥0</td></tr>
+        <tr class="grand"><td class="k">月額運用費 合計</td><td class="v" id="q-mon-total">¥0</td></tr>
+      </table></div>
+      <div class="field" style="margin-top:6px"><label>備考</label><textarea id="q-note" rows="3"></textarea></div>
+      <div class="field" style="margin-top:10px"><label>発行元（自社名・住所・連絡先など）</label><textarea id="q-issuer" rows="2" placeholder="株式会社○○／〒000-0000 ○○／TEL 00-0000-0000"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <span class="sp" id="q-note2"></span>
+      <span style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="mbtn" id="q-close" type="button">閉じる</button>
+        <button class="mbtn" id="q-copy" type="button">テキストでコピー</button>
+        <button class="mbtn" id="q-savehtml" type="button">HTMLで保存</button>
+        <button class="mbtn primary" id="q-print" type="button">印刷 / PDF</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- 印刷専用：見積書の清書 -->
+<div id="quote-doc"></div>
 
 <script>
 "use strict";
@@ -510,35 +616,8 @@ const GENERIC_SCHEMA = [
   ]}
 ]},
 
-{t:"優先順位評価",hint:"最有力候補の業務を1つ選んで採点",blocks:[
-  {type:"fields",items:[{k:"target",label:"評価対象の業務"}]},
-  {type:"score",items:["業務時間が多い","件数が多い","人手不足への影響","定型化しやすい","属人化している","ミス削減効果","顧客満足への影響","AI化しやすい","他部署へ展開できる","他社へ横展開できる"]}
-]},
-
-{t:"現状KPI",hint:"AI導入前の数値を取得する",blocks:[
-  {type:"table",id:"kpi",fixed:true,firstLabel:"KPI",
-   labels:["月間処理件数","月間作業時間","1件あたり時間","担当人数","受電件数","架電件数","メール件数","問い合わせ件数","商談件数","受注率","ミス件数","顧客待ち時間"],
-   cols:[{k:"now",label:"現状",w:"36%"},{k:"memo",label:"補足・測定方法",w:"44%"}]}
-]},
-
 {t:"現場からの希望",blocks:[
   {type:"textarea",k:"wish",label:"AIやシステムで「こんなことができたら助かる」ということはありますか？",rows:5}
-]},
-
-{t:"FDE総括",blocks:[
-  {type:"picks"},
-  {type:"triple",groups:[
-    {k:"issue",label:"現状の主要課題"},
-    {k:"priority",label:"優先して改善すべき業務"},
-    {k:"agent",label:"AIエージェント候補"},
-    {k:"quick",label:"すぐ実行できる改善"},
-    {k:"deep",label:"詳細ヒアリング対象"}
-  ]},
-  {type:"check",label:"必要資料",items:["業務マニュアル","Excel管理表","FAQ","電話応対マニュアル","メールテンプレート","システム画面","月次集計","問い合わせ履歴","受注・売上データ","スケジュール表"],other:true}
-]},
-
-{t:"全体集計用",hint:"業務棚卸しの入力から自動生成",blocks:[
-  {type:"agg"}
 ]}
 ];
 
@@ -748,10 +827,10 @@ function collectPicks(){
 }
 
 function renderPicks(){
-  const box = document.getElementById("picks");
-  if(!box) return;
   const picks = collectPicks();
   document.getElementById("m-flag").textContent = picks.length+"件";
+  const box = document.getElementById("picks");
+  if(!box) return;
   box.innerHTML = `<h3>★ 深掘り候補（各表で★を付けた項目）</h3>` +
     (picks.length
       ? `<ol>`+picks.map(p=>`<li>${esc(p.name)} <span style="color:#6B7280;font-size:11.5px">/ ${esc(p.label)}</span></li>`).join("")+`</ol>`
@@ -1069,7 +1148,8 @@ function serialize(){
   const data = {
     meta:{app:"RAGNIZE FDE hearing sheet",version:2,savedAt:new Date().toISOString()},
     config:activeCfg,
-    fields:{},checks:{},scores:scoreState,flags:[],tableRows:{}
+    fields:{},checks:{},scores:scoreState,flags:[],tableRows:{},
+    quote:quoteState
   };
   document.querySelectorAll("[data-k]").forEach(el=>{
     if(el.tagName==="TD") return;
@@ -1117,14 +1197,8 @@ function restore(data){
     const on = (data.flags||[]).includes(b.dataset.flag);
     b.classList.toggle("on",on); b.closest("tr").classList.toggle("flagged",on);
   });
-  document.querySelectorAll("#tbl-tasks tbody tr,#tbl-flow tbody tr").forEach(recalcRow);
-  renderAgg();
-  // 集計欄は業務棚卸しから作り直すため、テーブル生成後にもう一度流し込む
-  Object.entries(data.fields||{}).forEach(([k,v])=>{
-    if(!k.startsWith("agg.")) return;
-    const el = document.querySelector(`[data-k="${k}"]`);
-    if(el){ el.value = v; el.classList.toggle("filled",!!v); }
-  });
+  document.querySelectorAll("#tbl-tasks tbody tr").forEach(recalcRow);
+  quoteState = data.quote || null;   // 見積内容を復元
   renderPicks(); updateMeta(); updateProgress();
   dirty = false;
 }
@@ -1165,15 +1239,14 @@ function fileStem(){
 
 function buildRows(){
   const company = val("s1.0.company"), dept = val("s1.0.dept");
-  const head = ["会社","部署","業務","月間時間","件数","課題","AI化案","優先度","横展開","深掘り"];
-  const trs = [...document.querySelectorAll("#tbl-agg tbody tr")].filter(tr=>tr.dataset.name);
-  const flagged = collectPicks().map(p=>p.name);
+  const head = ["会社","部署","業務","内容","頻度","月間件数","月間時間","担当人数","使用ツール","深掘り"];
+  const trs = [...document.querySelectorAll("#tbl-tasks tbody tr")]
+    .filter(tr=>((tr.querySelector('[data-k$=".name"]')||{}).value||"").trim());
   const rows = trs.map(tr=>{
     const g = k => (tr.querySelector(`[data-k$=".${k}"]`)||{}).value||"";
-    const c = [...tr.children];
-    return [company,dept,tr.dataset.name,c[3].textContent.replace(" h",""),c[4].textContent.replace("—",""),
-            g("issue"),g("ai"),g("prio"),g("spread"),flagged.includes(tr.dataset.name)?"★":""]
-           .map(v=>v==="—"?"":v);
+    const hrs = (tr.querySelector('[data-calc="hours"]')||{}).dataset?.val||"";
+    const flagged = tr.querySelector(".flagbtn.on") ? "★" : "";
+    return [company,dept,g("name"),g("detail"),g("freq"),g("count"),hrs,g("people"),g("tool"),flagged];
   });
   return {head,rows};
 }
@@ -1243,6 +1316,200 @@ document.getElementById("btn-csv").onclick = ()=>{
   openExport("CSVで書き出し","下の CSV を全選択してコピー、または「ダウンロード」してください。",csv,fileStem()+".csv","text/csv");
 };
 document.getElementById("btn-print").onclick = ()=>window.print();
+
+/* ============================================================
+   簡易見積書（ヒアリング後にすぐ出す）
+   ------------------------------------------------------------
+   「AI・自動化候補」表から明細を自動生成し、単価・数量をその場で
+   調整して印刷/PDF・コピー・HTML保存できる。金額は quoteState に
+   保持し、JSON保存・自動保存にも含める。 */
+const QUOTE_PRICE = {
+  "AIエージェント":300000,"音声AI":400000,"RAG":250000,"メール自動生成":150000,
+  "Excel自動化":100000,"RPA":200000,"システム連携":300000,"ダッシュボード":150000,
+  "OCR":150000,"画像AI":250000,"その他":150000,"":150000
+};
+const QUOTE_KIND = ["初期","月額"];
+let quoteState = null;
+const yen = n => "¥"+Math.round(n||0).toLocaleString("ja-JP");
+
+function defaultQuote(){
+  return {
+    to:"", subject:"業務のAI化・自動化 初期導入", no:"",
+    date:new Date().toISOString().slice(0,10), expiry:"発行日より30日間",
+    staff:"", discount:0, tax:10,
+    note:"・本見積は初回ヒアリングに基づく概算です。詳細要件の確定により変動する場合があります。\n・別途、外部サービス利用料（API・クラウド等）の実費が発生する場合があります。",
+    issuer:"", items:[]
+  };
+}
+function itemsFromAI(){
+  const out=[];
+  document.querySelectorAll("#tbl-ai tbody tr").forEach(tr=>{
+    const g=k=>(tr.querySelector(`[data-k$=".${k}"]`)||{}).value||"";
+    const task=g("task"); if(!task.trim()) return;
+    const how=g("how"), plan=g("plan");
+    const desc = task + (how?`（${how}）`:"") + (plan?` — ${plan}`:"");
+    out.push({kind:"初期",desc,qty:1,unit:(QUOTE_PRICE[how]!=null?QUOTE_PRICE[how]:QUOTE_PRICE[""])});
+  });
+  if(!out.length){
+    collectPicks().forEach(p=>out.push({kind:"初期",desc:p.name,qty:1,unit:QUOTE_PRICE[""]}));
+  }
+  out.push({kind:"月額",desc:"運用・保守サポート",qty:1,unit:30000});
+  return out;
+}
+
+const qEl = document.getElementById("quotemodal");
+function openQuote(){
+  if(!quoteState) quoteState = defaultQuote();
+  if(!quoteState.to) quoteState.to = val("s1.0.company")||"";
+  if(!quoteState.staff) quoteState.staff = val("s1.0.fde")||"";
+  if(!quoteState.items || !quoteState.items.length) quoteState.items = itemsFromAI();
+  fillQuoteHeader(); renderQuoteItems(); recalcQuote();
+  document.getElementById("q-note2").textContent="";
+  qEl.hidden=false;
+}
+function fillQuoteHeader(){
+  const s=quoteState, id=x=>document.getElementById(x);
+  id("q-to").value=s.to; id("q-subject").value=s.subject; id("q-no").value=s.no;
+  id("q-date").value=s.date; id("q-expiry").value=s.expiry; id("q-staff").value=s.staff;
+  id("q-discount").value=s.discount; id("q-tax").value=s.tax;
+  id("q-note").value=s.note; id("q-issuer").value=s.issuer;
+}
+function readQuoteHeader(){
+  const s=quoteState, v=x=>document.getElementById(x).value;
+  s.to=v("q-to"); s.subject=v("q-subject"); s.no=v("q-no"); s.date=v("q-date");
+  s.expiry=v("q-expiry"); s.staff=v("q-staff");
+  s.discount=parseFloat(v("q-discount"))||0; s.tax=parseFloat(v("q-tax"))||0;
+  s.note=v("q-note"); s.issuer=v("q-issuer");
+}
+function renderQuoteItems(){
+  const tb=document.querySelector("#q-items tbody");
+  tb.innerHTML = quoteState.items.map((it,i)=>`<tr data-i="${i}">
+    <td><select data-q="kind">${QUOTE_KIND.map(k=>`<option${k===it.kind?" selected":""}>${k}</option>`).join("")}</select></td>
+    <td><input type="text" data-q="desc" value="${esc(it.desc)}"></td>
+    <td><input type="number" class="num" data-q="qty" value="${it.qty}"></td>
+    <td><input type="number" class="num" data-q="unit" value="${it.unit}"></td>
+    <td class="amt" data-amt>${yen(it.qty*it.unit)}</td>
+    <td><button type="button" class="delrow" data-qdel="${i}" title="削除">×</button></td></tr>`).join("");
+}
+function syncItemsFromDom(){
+  quoteState.items=[...document.querySelectorAll("#q-items tbody tr")].map(tr=>({
+    kind:tr.querySelector('[data-q="kind"]').value,
+    desc:tr.querySelector('[data-q="desc"]').value,
+    qty:parseFloat(tr.querySelector('[data-q="qty"]').value)||0,
+    unit:parseFloat(tr.querySelector('[data-q="unit"]').value)||0
+  }));
+}
+function recalcQuote(){
+  readQuoteHeader(); syncItemsFromDom();
+  let initSub=0, monSub=0;
+  document.querySelectorAll("#q-items tbody tr").forEach((tr,i)=>{
+    const it=quoteState.items[i], amt=it.qty*it.unit;
+    tr.querySelector("[data-amt]").textContent=yen(amt);
+    if(it.kind==="月額") monSub+=amt; else initSub+=amt;
+  });
+  const disc=quoteState.discount||0, taxR=(quoteState.tax||0)/100;
+  const initBase=Math.max(0,initSub-disc), initTax=initBase*taxR, monTax=monSub*taxR;
+  const set=(id,v)=>document.getElementById(id).textContent=yen(v);
+  set("q-init-sub",initSub); set("q-init-disc",disc); set("q-init-tax",initTax); set("q-init-total",initBase+initTax);
+  set("q-mon-sub",monSub); set("q-mon-tax",monTax); set("q-mon-total",monSub+monTax);
+  return {initSub,disc,initBase,initTax,initTotal:initBase+initTax,monSub,monTax,monTotal:monSub+monTax};
+}
+
+qEl.addEventListener("input",()=>{ recalcQuote(); scheduleSave(); });
+qEl.addEventListener("change",()=>{ recalcQuote(); scheduleSave(); });
+qEl.addEventListener("click",e=>{
+  const del=e.target.closest("[data-qdel]");
+  if(del){ syncItemsFromDom(); quoteState.items.splice(+del.dataset.qdel,1); renderQuoteItems(); recalcQuote(); scheduleSave(); }
+});
+document.getElementById("q-addrow").onclick=()=>{ syncItemsFromDom(); quoteState.items.push({kind:"初期",desc:"",qty:1,unit:0}); renderQuoteItems(); recalcQuote(); };
+document.getElementById("q-import").onclick=()=>{ quoteState.items=itemsFromAI(); renderQuoteItems(); recalcQuote(); scheduleSave(); toast("AI候補から明細を取り込みました"); };
+document.getElementById("q-close").onclick=()=>{ qEl.hidden=true; };
+document.getElementById("btn-quote").onclick=openQuote;
+
+function quoteStem(){
+  const c=((quoteState&&quoteState.to)||"見積").replace(/株式会社|㈱/g,"");
+  const day=(quoteState&&quoteState.date)||new Date().toISOString().slice(0,10);
+  return `見積書_${c}_${day}`.replace(/[\/\\:*?"<>|]/g,"_");
+}
+function quoteText(){
+  const t=recalcQuote(), s=quoteState, L=[];
+  L.push("御見積書");
+  L.push("宛先： "+(s.to||"")+" 御中");
+  L.push("件名： "+s.subject);
+  if(s.no) L.push("見積番号： "+s.no);
+  L.push("見積日： "+s.date+"　有効期限： "+s.expiry);
+  L.push(""); L.push("［明細］区分 / 内容 / 数量 / 単価 / 金額");
+  s.items.forEach(it=>L.push(`${it.kind}\t${it.desc}\t${it.qty}\t${it.unit}\t${it.qty*it.unit}`));
+  L.push("");
+  L.push("初期費用 合計： "+yen(t.initTotal)+"（税込）");
+  if(t.monSub>0) L.push("月額運用費 合計： "+yen(t.monTotal)+"（税込）");
+  if(s.note){ L.push(""); L.push("【備考】"); L.push(s.note); }
+  if(s.issuer){ L.push(""); L.push(s.issuer); }
+  return L.join("\n");
+}
+function quoteDocHTML(){
+  const t=recalcQuote(), s=quoteState;
+  const init=s.items.filter(it=>it.kind!=="月額"), mon=s.items.filter(it=>it.kind==="月額");
+  const rows=arr=>arr.map(it=>`<tr><td>${esc(it.desc)}</td><td class="r">${it.qty}</td><td class="r">${yen(it.unit)}</td><td class="r">${yen(it.qty*it.unit)}</td></tr>`).join("");
+  return `<div class="qd">
+    <h1>御 見 積 書</h1>
+    <div class="qd-top">
+      <div><div class="qd-to">${esc(s.to||"　")} 御中</div>
+        <div class="qd-lead">下記の通りお見積り申し上げます。</div></div>
+      <div class="qd-meta">${s.no?`見積番号：${esc(s.no)}<br>`:""}見積日：${esc(s.date)}<br>有効期限：${esc(s.expiry||"")}<br>${s.staff?`担当：${esc(s.staff)}`:""}</div>
+    </div>
+    <div class="qd-big"><span>件名：${esc(s.subject||"")}</span><span>初期費用 合計 <b>${yen(t.initTotal)}</b>（税込）</span></div>
+    <table class="qd-items"><thead><tr><th>初期費用の内容</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th></tr></thead>
+      <tbody>${rows(init)||`<tr><td colspan="4">—</td></tr>`}</tbody></table>
+    <div class="qd-sub"><table>
+      <tr><td>小計</td><td class="r">${yen(t.initSub)}</td></tr>
+      <tr><td>値引き</td><td class="r">${yen(t.disc)}</td></tr>
+      <tr><td>消費税(${s.tax}%)</td><td class="r">${yen(t.initTax)}</td></tr>
+      <tr class="g"><td>初期費用 合計</td><td class="r">${yen(t.initTotal)}</td></tr></table></div>
+    ${mon.length?`<table class="qd-items"><thead><tr><th>月額運用費の内容</th><th class="r">数量</th><th class="r">単価</th><th class="r">金額</th></tr></thead>
+      <tbody>${rows(mon)}</tbody></table>
+    <div class="qd-sub"><table>
+      <tr><td>小計</td><td class="r">${yen(t.monSub)}</td></tr>
+      <tr><td>消費税(${s.tax}%)</td><td class="r">${yen(t.monTax)}</td></tr>
+      <tr class="g"><td>月額運用費 合計</td><td class="r">${yen(t.monTotal)}</td></tr></table></div>`:""}
+    ${s.note?`<div class="qd-note">${esc(s.note)}</div>`:""}
+    ${s.issuer?`<div class="qd-issuer">${esc(s.issuer)}</div>`:""}
+  </div>`;
+}
+function renderQuoteDoc(){ document.getElementById("quote-doc").innerHTML = quoteDocHTML(); }
+
+document.getElementById("q-print").onclick=()=>{
+  renderQuoteDoc();
+  document.body.classList.add("print-quote");
+  window.print();
+};
+window.addEventListener("afterprint",()=>document.body.classList.remove("print-quote"));
+document.getElementById("q-copy").onclick=async ()=>{
+  const txt=quoteText();
+  try{ await navigator.clipboard.writeText(txt); document.getElementById("q-note2").textContent="コピーしました。"; toast("見積をコピーしました"); }
+  catch(e){ openExport("見積（テキスト）","全選択してコピーしてください。",txt,quoteStem()+".txt","text/plain"); }
+};
+document.getElementById("q-savehtml").onclick=()=>{
+  renderQuoteDoc();
+  const style="body{font-family:'Meiryo',sans-serif;color:#111;padding:24px}"+
+    ".qd{max-width:720px;margin:0 auto;font-size:13px;line-height:1.7}"+
+    "h1{font-size:22px;letter-spacing:.3em;text-align:center;border-bottom:2px solid #16294D;padding-bottom:10px}"+
+    ".qd-top{display:flex;justify-content:space-between;gap:24px;margin-bottom:18px}"+
+    ".qd-to{font-size:16px;font-weight:700;border-bottom:1px solid #333;padding-bottom:4px;min-width:240px}"+
+    ".qd-meta{font-size:12px;text-align:right;line-height:1.9}.qd-lead{margin:6px 0 14px}"+
+    ".qd-big{border:1px solid #16294D;background:#F3F4F6;padding:8px 14px;display:flex;justify-content:space-between;margin-bottom:18px}"+
+    ".qd-big b{font-size:20px;color:#16294D}"+
+    "table.qd-items{width:100%;border-collapse:collapse;margin-bottom:6px}"+
+    "table.qd-items th{background:#16294D;color:#fff;font-size:12px;padding:7px 8px;text-align:left}"+
+    "table.qd-items th.r,table.qd-items td.r{text-align:right}"+
+    "table.qd-items td{border-bottom:1px solid #ccc;padding:6px 8px;font-size:12.5px}"+
+    ".qd-sub{display:flex;justify-content:flex-end;margin-bottom:16px}.qd-sub table{border-collapse:collapse;min-width:260px}"+
+    ".qd-sub td{padding:4px 10px}.qd-sub td.r{text-align:right}.qd-sub tr.g td{border-top:2px solid #16294D;font-weight:700;font-size:15px}"+
+    ".qd-note{border:1px solid #ccc;padding:10px 12px;font-size:12px;white-space:pre-wrap}"+
+    ".qd-issuer{margin-top:14px;font-size:12px;text-align:right;white-space:pre-wrap}";
+  const html=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${esc(quoteStem())}</title><style>${style}</style></head><body>${quoteDocHTML()}</body></html>`;
+  download(quoteStem()+".html",html,"text/html");
+};
 
 let toastTimer;
 function toast(msg){

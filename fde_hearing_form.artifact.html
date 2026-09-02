@@ -217,7 +217,7 @@ tr.flagged td{background:var(--flag-bg)}
 .tpl-opt.on{border-color:var(--navy);background:#EEF1F6;box-shadow:0 0 0 1px var(--navy)}
 .tpl-opt b{display:block;font-size:13px;color:var(--navy);margin-bottom:3px}
 .tpl-opt span{font-size:11.5px;color:var(--muted);line-height:1.5}
-.modal-body input[type=text],.modal-body textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:#FCFCFD}
+.modal-body input[type=text],.modal-body input[type=password],.modal-body textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:#FCFCFD}
 .modal-body textarea{min-height:120px;resize:vertical;font-size:13px;line-height:1.6}
 .modal-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 24px 20px;flex-wrap:wrap}
 .modal-foot .sp{font-size:11.5px;color:var(--muted)}
@@ -333,6 +333,10 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
       <button class="btn" id="btn-print">印刷</button>
       <button class="btn" id="btn-quote">見積を作成</button>
       <button class="btn btn-primary" id="btn-save">JSONで保存</button>
+      <span class="btn" id="who" hidden style="cursor:default;border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.08)"></span>
+      <button class="btn" id="btn-account" hidden>アカウント</button>
+      <button class="btn" id="btn-admin" hidden>管理</button>
+      <button class="btn" id="btn-logout" hidden>ログアウト</button>
       <input type="file" id="file-in" accept=".json" hidden>
     </div>
   </div>
@@ -489,6 +493,43 @@ table.qt input.num{text-align:right;font-family:var(--mono)}
     <div class="modal-foot">
       <span class="sp"></span>
       <button class="mbtn" id="hist-close" type="button">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- アカウント（パスワード変更）モーダル ---------- -->
+<div class="modal-bg" id="acctmodal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2>アカウント</h2><p>ACCOUNT</p></div>
+    <div class="modal-body">
+      <div class="fg"><label class="lb" for="acct-cur">現在のパスワード</label><input type="password" id="acct-cur" autocomplete="current-password"></div>
+      <div class="fg"><label class="lb" for="acct-new">新しいパスワード（8文字以上・英字と数字を含む）</label><input type="password" id="acct-new" autocomplete="new-password"></div>
+      <div class="fg"><label class="lb" for="acct-new2">新しいパスワード（確認）</label><input type="password" id="acct-new2" autocomplete="new-password"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="sp hist-warn" id="acct-msg"></span>
+      <span style="display:flex;gap:10px"><button class="mbtn" id="acct-close" type="button">閉じる</button><button class="mbtn primary" id="acct-ok" type="button">変更する</button></span>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- スタッフ管理（管理者のみ）モーダル ---------- -->
+<div class="modal-bg" id="adminmodal" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2>スタッフ管理</h2><p>USER MANAGEMENT</p></div>
+    <div class="modal-body">
+      <div class="q-grid" style="grid-template-columns:1.2fr 1.2fr .8fr auto;align-items:end">
+        <div class="field"><label>ユーザー名</label><input type="text" id="admin-un" placeholder="staff01"></div>
+        <div class="field"><label>初期パスワード（8文字以上・英数字）</label><input type="text" id="admin-pw" placeholder="初回変更を促します"></div>
+        <div class="field"><label>権限</label><select id="admin-role"><option value="staff">スタッフ</option><option value="admin">管理者</option></select></div>
+        <button class="mbtn primary" id="admin-add" type="button">追加</button>
+      </div>
+      <p class="hintline" id="admin-msg"></p>
+      <div id="admin-list"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="sp"></span>
+      <button class="mbtn" id="admin-close" type="button">閉じる</button>
     </div>
   </div>
 </div>
@@ -1144,7 +1185,7 @@ document.getElementById("setup-ok").onclick = ()=>{
     companies: document.getElementById("cfg-companies").value.split("\n").map(s=>s.trim()).filter(Boolean)
   };
   saveConfig(cfg);
-  if(setupMode==="new"){ libState.currentId = newId(); quoteState = null; }
+  if(setupMode==="new"){ libState.currentId = REMOTE ? null : newId(); quoteState = null; }
   buildForm(cfg);
   dirty = false;
   autosave();          // 新規/変更後の状態を履歴に反映
@@ -1162,13 +1203,18 @@ function loadConfig(){
 }
 
 /* ============================================================
-   ヒアリング履歴（会社ごとに複数保存・この端末のブラウザに保持）
+   ヒアリング履歴
+   ------------------------------------------------------------
+   REMOTE(サーバー配信)時 … サーバーAPIに保存し全スタッフで共有。
+   静的ファイル単体      … この端末のブラウザ(localStorage)に保存。
    ============================================================ */
+const REMOTE = !!window.__FDE_API__;
 const LS_LIB = "ragnize_fde_library_v1";
 const LS_DATA = "ragnize_fde_data_v1";   // 旧・単一スロット（移行用）
-let libState = {currentId:null, records:{}};
-let saveTimer;
-let histArmDel = null;
+let libState = {currentId:null, records:{}};   // ローカル用
+let libMeta = [];                              // リモート用の一覧キャッシュ
+let CSRF = "", ME = null;
+let saveTimer, savingP = Promise.resolve(), histArmDel = null;
 
 function loadLib(){ try{ const s=localStorage.getItem(LS_LIB); return s?JSON.parse(s):null; }catch(e){ return null; } }
 function saveLib(){ try{ localStorage.setItem(LS_LIB, JSON.stringify(libState)); }catch(e){} }
@@ -1182,63 +1228,103 @@ function curMeta(){
     pct: (document.getElementById("m-pct")||{}).textContent||"0%"
   };
 }
-/* 現在編集中のヒアリングを、その履歴レコードに保存 */
-function autosave(){
-  if(!libState.currentId) libState.currentId = newId();
-  const id = libState.currentId, now = new Date().toISOString();
-  const rec = libState.records[id] || {id, savedAt:now};
-  rec.updatedAt = now; rec.meta = curMeta(); rec.data = serialize();
-  libState.records[id] = rec;
-  saveLib();
+async function api(method,url,body){
+  const opt={method,headers:{},credentials:"same-origin"};
+  if(body!==undefined){ opt.headers["Content-Type"]="application/json"; opt.body=JSON.stringify(body); }
+  if(method!=="GET" && CSRF) opt.headers["X-CSRF-Token"]=CSRF;
+  const r=await fetch(url,opt);
+  if(r.status===401){ location.href="/login"; throw new Error("unauthorized"); }
+  if(!r.ok){ let m=""; try{ m=(await r.json()).error; }catch(e){} throw new Error(m||("HTTP "+r.status)); }
+  const ct=r.headers.get("content-type")||"";
+  return ct.includes("application/json") ? r.json() : r.text();
 }
-function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(autosave,500); }
 
-/* 履歴を1件開く（開く前に現在の編集内容を保存してから切替） */
-function openRecord(id){
-  const rec = libState.records[id]; if(!rec) return;
-  autosave();                 // 現在のレコードを保存
-  libState.currentId = id;
-  histArmDel = null;
-  restore(rec.data);          // フォームを組み直して流し込む
-  saveLib();
-  renderHist();
+/* 現在編集中のヒアリングを保存 */
+function autosave(){
+  if(REMOTE){
+    const payload={meta:curMeta(), data:serialize()};
+    savingP = savingP.then(async()=>{
+      try{
+        if(!libState.currentId){ const res=await api("POST","/api/hearings",payload); libState.currentId=res.id; }
+        else{ await api("PUT","/api/hearings/"+encodeURIComponent(libState.currentId),payload); }
+      }catch(e){ if(String(e.message)!=="unauthorized") toast("保存に失敗しました："+e.message); }
+    });
+    return savingP;
+  }
+  if(!libState.currentId) libState.currentId = newId();
+  const id=libState.currentId, now=new Date().toISOString();
+  const rec=libState.records[id]||{id,savedAt:now};
+  rec.updatedAt=now; rec.meta=curMeta(); rec.data=serialize();
+  libState.records[id]=rec; saveLib();
+  return Promise.resolve();
 }
-function dupRecord(id){
-  const src = libState.records[id]; if(!src) return;
-  const nid = newId(), now = new Date().toISOString();
-  libState.records[nid] = {id:nid, savedAt:now, updatedAt:now,
-    meta:Object.assign({},src.meta), data:JSON.parse(JSON.stringify(src.data))};
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>autosave(),600); }
+
+async function refreshLib(){ if(REMOTE) libMeta = await api("GET","/api/hearings"); }
+function histRecords(){
+  if(REMOTE) return libMeta.map(m=>({id:m.id, meta:{company:m.company,dept:m.dept,date:m.date,pct:m.pct}, updatedAt:m.updatedAt, updatedBy:m.updatedBy}))
+                          .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  return Object.values(libState.records).map(r=>({id:r.id,meta:r.meta,updatedAt:r.updatedAt}))
+              .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+}
+
+async function openRecord(id){
+  histArmDel=null;
+  if(REMOTE){
+    await autosave();
+    const rec=await api("GET","/api/hearings/"+encodeURIComponent(id));
+    libState.currentId=id; restore(rec.data);
+    await refreshLib(); renderHist(); return;
+  }
+  const rec=libState.records[id]; if(!rec) return;
+  await autosave(); libState.currentId=id; restore(rec.data); saveLib(); renderHist();
+}
+async function dupRecord(id){
+  if(REMOTE){
+    const rec=await api("GET","/api/hearings/"+encodeURIComponent(id));
+    const res=await api("POST","/api/hearings",{meta:rec.meta,data:rec.data});
+    await openRecord(res.id); toast("複製しました"); return;
+  }
+  const src=libState.records[id]; if(!src) return;
+  const nid=newId(), now=new Date().toISOString();
+  libState.records[nid]={id:nid,savedAt:now,updatedAt:now,meta:Object.assign({},src.meta),data:JSON.parse(JSON.stringify(src.data))};
   saveLib(); openRecord(nid); toast("複製しました");
 }
-function delRecord(id){
+async function delRecord(id){
+  histArmDel=null;
+  if(REMOTE){
+    try{ await api("DELETE","/api/hearings/"+encodeURIComponent(id)); }catch(e){ toast(e.message); return; }
+    await refreshLib();
+    if(libState.currentId===id){
+      const rest=libMeta.slice().sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+      if(rest.length){ await openRecord(rest[0].id); }
+      else{ libState.currentId=null; renderHist(); startNew(); return; }
+    }
+    renderHist(); toast("削除しました"); return;
+  }
   delete libState.records[id];
-  histArmDel = null;
   if(libState.currentId===id){
-    const rest = Object.values(libState.records).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
-    if(rest.length){ libState.currentId = rest[0].id; restore(rest[0].data); }
-    else { libState.currentId = null; saveLib(); renderHist(); startNew(); return; }
+    const rest=Object.values(libState.records).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+    if(rest.length){ libState.currentId=rest[0].id; restore(rest[0].data); }
+    else{ libState.currentId=null; saveLib(); renderHist(); startNew(); return; }
   }
   saveLib(); renderHist(); toast("削除しました");
 }
-function startNew(){ setupMode = "new"; openSetup(); }
+function startNew(){ setupMode="new"; openSetup(); }
 
 /* ---------- 履歴モーダル ---------- */
 const histEl = document.getElementById("histmodal");
-function openHist(){ histArmDel=null; renderHist(); histEl.hidden=false; }
+async function openHist(){ histArmDel=null; try{ await refreshLib(); }catch(e){} renderHist(); histEl.hidden=false; }
 function renderHist(){
-  const list = document.getElementById("hist-list");
-  if(!list) return;
-  const recs = Object.values(libState.records)
-    .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
-  document.getElementById("hist-count").textContent = recs.length+"件";
-  if(!recs.length){
-    list.innerHTML = `<div class="hist-empty">まだ履歴がありません。「＋ 新しいヒアリング」から始めてください。</div>`;
-    return;
-  }
-  list.innerHTML = recs.map(r=>{
-    const m = r.meta||{}, cur = r.id===libState.currentId;
-    const when = (r.updatedAt||"").slice(0,16).replace("T"," ");
-    const acts = r.id===histArmDel
+  const list=document.getElementById("hist-list"); if(!list) return;
+  const recs=histRecords();
+  document.getElementById("hist-count").textContent=recs.length+"件";
+  if(!recs.length){ list.innerHTML=`<div class="hist-empty">まだ履歴がありません。「＋ 新しいヒアリング」から始めてください。</div>`; return; }
+  list.innerHTML=recs.map(r=>{
+    const m=r.meta||{}, cur=r.id===libState.currentId;
+    const when=(r.updatedAt||"").slice(0,16).replace("T"," ");
+    const by=r.updatedBy?`　/　${esc(r.updatedBy)}`:"";
+    const acts=r.id===histArmDel
       ? `<span class="hist-warn">削除しますか？</span>
          <button class="mbtn" data-hdelyes="${r.id}">はい</button>
          <button class="mbtn" data-hdelno="1">いいえ</button>`
@@ -1248,7 +1334,7 @@ function renderHist(){
     return `<div class="hist-row${cur?" cur":""}">
       <div class="hist-main">
         <div class="hist-co">${esc(m.company||"（会社名 未入力）")}${cur?' <span style="font-size:11px;color:#6B7280;font-weight:400">— 編集中</span>':''}</div>
-        <div class="hist-sub">${esc(m.dept||"部署未入力")}　/　${esc(m.date||"日付未入力")}　/　更新 ${esc(when)}</div>
+        <div class="hist-sub">${esc(m.dept||"部署未入力")}　/　${esc(m.date||"日付未入力")}　/　更新 ${esc(when)}${by}</div>
       </div>
       <div class="hist-pct">${esc(m.pct||"0%")}</div>
       <div class="hist-acts">${acts}</div>
@@ -1261,7 +1347,7 @@ document.getElementById("hist-close").onclick = ()=>{ histEl.hidden=true; };
 document.getElementById("hist-new").onclick = ()=>{ histEl.hidden=true; startNew(); };
 document.getElementById("hist-list").addEventListener("click",e=>{
   const open=e.target.closest("[data-hopen]");
-  if(open){ openRecord(open.dataset.hopen); histEl.hidden=true; toast("履歴を開きました"); return; }
+  if(open){ openRecord(open.dataset.hopen).then(()=>{ histEl.hidden=true; }); return; }
   const dup=e.target.closest("[data-hdup]");
   if(dup){ dupRecord(dup.dataset.hdup); return; }
   const del=e.target.closest("[data-hdel]");
@@ -1271,6 +1357,66 @@ document.getElementById("hist-list").addEventListener("click",e=>{
   const dy=e.target.closest("[data-hdelyes]");
   if(dy){ delRecord(dy.dataset.hdelyes); return; }
 });
+
+/* ============================================================
+   認証UI（サーバー配信時のみ有効。静的ファイルでは非表示）
+   ============================================================ */
+async function initAuth(){
+  ME = await api("GET","/api/me");     // 401 なら /login へ遷移
+  CSRF = ME.csrf;
+  const who=document.getElementById("who");
+  who.hidden=false; who.textContent="👤 "+ME.user.username+(ME.user.role==="admin"?"（管理者）":"");
+  document.getElementById("btn-logout").hidden=false;
+  document.getElementById("btn-account").hidden=false;
+  if(ME.user.role==="admin") document.getElementById("btn-admin").hidden=false;
+}
+if(document.getElementById("btn-logout")) document.getElementById("btn-logout").onclick = async ()=>{
+  try{ await autosave(); }catch(e){}
+  try{ await api("POST","/api/logout"); }catch(e){}
+  location.href="/login";
+};
+/* アカウント（パスワード変更） */
+const acctEl=document.getElementById("acctmodal");
+if(document.getElementById("btn-account")){
+  document.getElementById("btn-account").onclick=()=>{ document.getElementById("acct-msg").textContent=""; ["acct-cur","acct-new","acct-new2"].forEach(i=>document.getElementById(i).value=""); acctEl.hidden=false; };
+  document.getElementById("acct-close").onclick=()=>{ acctEl.hidden=true; };
+  document.getElementById("acct-ok").onclick=async ()=>{
+    const cur=document.getElementById("acct-cur").value, n1=document.getElementById("acct-new").value, n2=document.getElementById("acct-new2").value;
+    if(n1!==n2){ document.getElementById("acct-msg").textContent="新しいパスワードが一致しません"; return; }
+    try{ await api("POST","/api/account/password",{current:cur,next:n1}); acctEl.hidden=true; if(ME) ME.mustChangePassword=false; toast("パスワードを変更しました"); }
+    catch(e){ document.getElementById("acct-msg").textContent=e.message; }
+  };
+}
+/* 管理（スタッフのアカウント発行・削除・PWリセット） */
+const adminEl=document.getElementById("adminmodal");
+if(document.getElementById("btn-admin")){
+  document.getElementById("btn-admin").onclick=async ()=>{ document.getElementById("admin-msg").textContent=""; await renderUsers(); adminEl.hidden=false; };
+  document.getElementById("admin-close").onclick=()=>{ adminEl.hidden=true; };
+  document.getElementById("admin-add").onclick=async ()=>{
+    const un=document.getElementById("admin-un").value.trim(), pw=document.getElementById("admin-pw").value, role=document.getElementById("admin-role").value;
+    try{ await api("POST","/api/users",{username:un,password:pw,role});
+      document.getElementById("admin-un").value=""; document.getElementById("admin-pw").value="";
+      document.getElementById("admin-msg").textContent="追加しました。本人に初期パスワードを伝え、初回に変更してもらってください。"; renderUsers();
+    }catch(e){ document.getElementById("admin-msg").textContent=e.message; }
+  };
+  document.getElementById("admin-list").addEventListener("click",async e=>{
+    const del=e.target.closest("[data-udel]");
+    if(del){ if(del.dataset.armed!=="1"){ del.dataset.armed="1"; del.textContent="本当に削除"; setTimeout(()=>{ if(del){del.dataset.armed="";del.textContent="削除";} },3000); return; }
+      try{ await api("DELETE","/api/users/"+del.dataset.udel); renderUsers(); }catch(err){ document.getElementById("admin-msg").textContent=err.message; } return; }
+    const rs=e.target.closest("[data-ureset]");
+    if(rs){ const np=prompt("新しい初期パスワード（8文字以上・英数字を含む）"); if(!np) return;
+      try{ await api("POST","/api/users/"+rs.dataset.ureset+"/reset",{password:np}); document.getElementById("admin-msg").textContent="パスワードをリセットしました。"; }
+      catch(err){ document.getElementById("admin-msg").textContent=err.message; } }
+  });
+}
+async function renderUsers(){
+  let users=[]; try{ users=await api("GET","/api/users"); }catch(e){ document.getElementById("admin-msg").textContent=e.message; return; }
+  document.getElementById("admin-list").innerHTML=users.map(u=>`<div class="hist-row">
+    <div class="hist-main"><div class="hist-co">${esc(u.username)} <span style="font-size:11px;color:#6B7280;font-weight:400">${u.role==="admin"?"管理者":"スタッフ"}${u.mustChangePassword?" ・要PW変更":""}</span></div>
+      <div class="hist-sub">作成 ${esc((u.createdAt||"").slice(0,10))}</div></div>
+    <div class="hist-acts"><button class="mbtn" data-ureset="${u.id}">PWリセット</button><button class="mbtn" data-udel="${u.id}">削除</button></div>
+  </div>`).join("");
+}
 
 /* ============================================================
    保存・書き出し
@@ -1667,26 +1813,37 @@ setTimeout(()=>savebar.classList.add("hide"),12000);
 /* ============================================================
    初期化
    ============================================================ */
-(function init(){
+(async function init(){
+  if(REMOTE){
+    try{ await initAuth(); }catch(e){ return; }        // 401 は /login へ遷移済み
+    try{ await refreshLib(); }catch(e){ libMeta=[]; }
+    if(libMeta.length){
+      const newest=libMeta.slice().sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0];
+      await openRecord(newest.id);
+    }else{
+      const saved=loadConfig();
+      buildForm(saved && saved.templateId ? saved : {templateId:"generic",orgName:"",subtitle:"",companies:[]});
+      startNew();
+    }
+    if(ME && ME.mustChangePassword){ toast("初回ログインです。パスワードを変更してください。"); document.getElementById("btn-account").click(); }
+    return;
+  }
   const lib = loadLib();
   if(lib && lib.records && Object.keys(lib.records).length){
     libState = lib;
-    // currentId が無効なら最新の履歴を開く
     const recs = Object.values(lib.records).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
     const id = (lib.currentId && lib.records[lib.currentId]) ? lib.currentId : recs[0].id;
     libState.currentId = id;
     restore(libState.records[id].data);
     return;
   }
-  // 旧・単一スロットからの移行
-  const old = loadData();
+  const old = loadData();   // 旧・単一スロットからの移行
   if(old && old.config && old.config.templateId){
     libState = {currentId:newId(), records:{}};
     restore(old); autosave();
     try{ localStorage.removeItem(LS_DATA); }catch(e){}
     return;
   }
-  // 初回
   libState = {currentId:null, records:{}};
   const saved = loadConfig();
   buildForm(saved && saved.templateId ? saved : {templateId:"generic",orgName:"",subtitle:"",companies:[]});

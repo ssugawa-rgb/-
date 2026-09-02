@@ -1,0 +1,7 @@
+# dependencies / runtime data — never commit these
+node_modules/
+server/node_modules/
+server/data/
+.env
+server/.env
+*.log
